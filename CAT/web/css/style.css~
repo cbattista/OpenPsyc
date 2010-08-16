@@ -1,0 +1,26 @@
+body {
+	background-color: black;
+}
+
+div#trainer, div#login, div#instructions {
+	color: white;
+	width: 200px;
+	text-align: center;
+	margin-top: 100px;
+	margin-left: auto;
+	margin-right: auto;
+
+}
+
+
+p {
+	text-align: left;
+}
+
+form {
+	font-size: 2em;
+}
+
+div#error {
+	color: #FF0000;
+}
