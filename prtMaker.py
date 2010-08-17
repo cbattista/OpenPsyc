@@ -25,7 +25,15 @@ def StringToType(value):
 def strip(item):
 	item = item.strip()
 	item = item.strip("\"")
-	return item
+	newItem = ""
+	for i in list(item):
+		try:
+			newItem = newItem + unicode(i)
+			
+		except:
+			print "removing %s" % i
+
+	return newItem.encode('UTF-8')
 
 class PRTFile:
 	def __init__(self, theFile, settings = "", onset = 16000, offset=1950, checkErrors=False, eprime=True):
@@ -74,11 +82,12 @@ class PRTFile:
 		print txt
 		f = open(txt, 'r')
 		lines = map(strip, f.readlines())
-
-		print lines[0]
+		f.close()
+		
+		print lines
 
 		i1 = lines.index("*** Header Start ***")
-		i2 = lines.index("*** Header End ***")
+		i2 = lines.index(u"*** Header End ***")
 
 		print i1, i2
 
