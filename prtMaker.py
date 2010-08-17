@@ -7,7 +7,25 @@ import glob
 import os
 import random
 import pickle
-from fileUtils import *
+
+def StringToType(value):
+	if value.isdigit():
+		val = int(value)
+
+	elif value.count('.') == 1:
+		val = value.split('.')
+		if val[0].isdigit() and val[1].isdigit():
+			val = float(value)
+
+	else:
+		val = value
+
+	return val
+	
+def strip(item):
+	item = item.strip()
+	item = item.strip("\"")
+	return item
 
 class PRTFile:
 	def __init__(self, theFile, settings = "", onset = 16000, offset=1950, checkErrors=False, eprime=True):
@@ -62,6 +80,8 @@ class PRTFile:
 		i1 = lines.index("*** Header Start ***")
 		i2 = lines.index("*** Header End ***")
 
+		print i1, i2
+
 		header = lines[i1+1:i2]
 
 		info = {}
@@ -74,24 +94,16 @@ class PRTFile:
 			key = frags[0]
 			value = frags[1]
 
-			if self.columns:
-				if key in self.columns:
-					info[key] = StringToType(value)
-			else:
-				info[key] = StringToType(value)
+			info[key] = StringToType(value)
 
-		i1 = lines.index("Level: 2")
+		i1 = lines.index("*** LogFrame Start ***")
+
+
 
 		dataLines = lines[i1 + 1:]
 
 		VARs = {}
 		index = {}
-
-		"""
-		for k in headers:
-			index[k] = headers.index(k)
-			VARs[k] = []
-		"""
 
 		first = True
 
@@ -100,18 +112,25 @@ class PRTFile:
 			if d.count(":"):
 				frags = d.split(":")
 				frags = map(strip, frags)
-				key = frags[0]
+				k = frags[0]
 				value = frags[1]
+
+				print k, value
 
 				if first:
 					index[k] = hindex
 					VARs[k] = []
 					hindex = hindex + 1
 				
-				VARs[key].append(value)
+				try:
+					VARs[k].append(StringToType(value))
+				except:
+					pass
 		
 			elif d == "*** LogFrame End ***":
 				first = False
+
+		print VARs
 				
 		self.VARs = VARs
 		self.fname = "%s_%s_%s.prt" % (info['Subject'], info['Experiment'], info['Session'])
@@ -130,7 +149,7 @@ class PRTFile:
 			subtractor = self.onset
 	
 			if onset != "":
-				onset = onset -subtractor
+				onset = onset - subtractor
 				offset = onset + self.offset
 				myCond = myCond
 
