@@ -7,19 +7,18 @@ import glob
 import os
 import random
 import pickle
-
-def strip(item):
-	item = item.strip()
-	item = item.strip("\"")
-	return item
+from fileUtils import *
 
 class PRTFile:
-	def __init__(self, csvFile, settings = "", onset = 16000, offset=1950, checkErrors=False):
+	def __init__(self, theFile, settings = "", onset = 16000, offset=1950, checkErrors=False, eprime=True):
 		self.settings = settings
 		self.onset = onset
 		self.offset = offset
 		self.checkErrors = checkErrors
-		self.processCSV(csvFile)
+		if not eprime:
+			self.processCSV(theFile)
+		else:
+			self.processEPrime(theFile)
 		self.makePRTDict()
 		self.setColors()
 		self.makePRT()
@@ -48,13 +47,74 @@ class PRTFile:
 			line = map(strip, line)
 			for k in VARs.keys():
 				#print k
-				VARs[k].append(line[index[k]])
+				VARs[k].append(StringToType(line[index[k]]))
 
 		self.fname = "%s.prt" % run
-		print self.fname
-
-
 		self.VARs = VARs
+
+	def processEPrime(self, txt):
+		print txt
+		f = open(txt, 'r')
+		lines = map(strip, f.readlines())
+
+		print lines[0]
+
+		i1 = lines.index("*** Header Start ***")
+		i2 = lines.index("*** Header End ***")
+
+		header = lines[i1+1:i2]
+
+		info = {}
+
+		data = {}
+
+		for h in header:
+			frags = h.split(":")
+			frags = map(strip, frags)
+			key = frags[0]
+			value = frags[1]
+
+			if self.columns:
+				if key in self.columns:
+					info[key] = StringToType(value)
+			else:
+				info[key] = StringToType(value)
+
+		i1 = lines.index("Level: 2")
+
+		dataLines = lines[i1 + 1:]
+
+		VARs = {}
+		index = {}
+
+		"""
+		for k in headers:
+			index[k] = headers.index(k)
+			VARs[k] = []
+		"""
+
+		first = True
+
+		for d in dataLines:
+			hindex = 0
+			if d.count(":"):
+				frags = d.split(":")
+				frags = map(strip, frags)
+				key = frags[0]
+				value = frags[1]
+
+				if first:
+					index[k] = hindex
+					VARs[k] = []
+					hindex = hindex + 1
+				
+				VARs[key].append(value)
+		
+			elif d == "*** LogFrame End ***":
+				first = False
+				
+		self.VARs = VARs
+		self.fname = "%s_%s_%s.prt" % (info['Subject'], info['Experiment'], info['Session'])
 
 			
 	def makePRTDict(self):
@@ -65,16 +125,15 @@ class PRTFile:
 		count = 1
 		if self.checkErrors:
 			prtDict['Error'] = []
-		for myCond, onset, offset, subtractor, ACC in zip(VARs['Ratio'], VARs['Problem.OnsetTime'], VARs['Problem.OffsetTime'], VARs['firsttrigger.OffsetTime'], VARs['Problem.ACC']):
+		for myCond, onset, jitter in zip(VARs['Condition'], VARs['SymbolPresentation.OnsetTime'], VARs['Jitter']):
+	
+			subtractor = self.onset
 	
 			if onset != "":
-				onset = int(onset) - int(subtractor)
-				offset = int(offset) - int(subtractor)
-				myCond = float(myCond)
-				myCond = round(myCond, 2)				
+				onset = onset -subtractor
+				offset = onset + self.offset
+				myCond = myCond
 
-			
-				myCond = "Ratio_%s" % (myCond)
 				myString = "%s %s" % (onset, offset)
 		
 				if self.checkErrors:
@@ -143,6 +202,7 @@ class PRTFile:
 		f.write(self.settings)
 		f.write(self.prtString)
 		f.close()
+		print "%s created succesfully" % self.fname
 
 	def makePRT(self):
 		#print prtDict
@@ -174,8 +234,8 @@ class PRTFile:
 
 settings = """FileVersion:       1\n\nResolutionOfTime:   msec\n\nExperiment:         Child_SCE\n\nBackgroundColor:    0 0 0\nTextColor:          255 255 255\nTimeCourseColor:    255 255 255\nTimeCourseThick:    3\nReferenceFuncColor: 0 0 80\nReferenceFuncThick: 3\n\n"""
 
-csvs = glob.glob("*.csv")
+theFiles = glob.glob("*.txt")
 
-for files in csvs:
-	prtFile = PRTFile(files, settings=settings)
+for files in theFiles:
+	prtFile = PRTFile(files, settings=settings, checkErrors=False)
 	prtFile.writePRT()
