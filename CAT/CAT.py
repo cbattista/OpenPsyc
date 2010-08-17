@@ -49,7 +49,6 @@ def time_to_frame(t):
 
 #problem control, SRBox voice trigger
 def problem_controller(f_abs):
-
 	if f_abs == 1:
 		onset = time.time()
 		ser = serial.Serial(port=0, baudrate=19200)
@@ -110,10 +109,8 @@ def key_handler(event):
 		p2.parameters.go_duration = (0, 'frames')
 	elif event.key == K_f:
 		falsePos = 1
-		print "FP"
 	elif event.key == K_t:
 		trueNeg = 1
-		print "TN"
 	"""
 	elif event.key == K_ESCAPE:
 		p2.parameters.go_duration = (0, 'frames')
@@ -140,6 +137,10 @@ n2 = begin[1]
 
 #this will be the problems we want the person to repeat
 problemHeap = []
+
+#list of incorrect problems
+incorrects = []
+
 #these will be the list of problems by strategy
 memProblems = []
 calcProblems = []
@@ -149,8 +150,6 @@ calcLen = 0
 
 #default strategy
 strategy = None
-
-print "TRIALS : %s" % trials
 
 while memLen <= trials or calcLen <= trials:
 	#generate problem based on last round
@@ -190,7 +189,6 @@ while memLen <= trials or calcLen <= trials:
 				if n2 == 0:
 					n2 = 1
 
-
 			else:
 				pass
 
@@ -198,7 +196,7 @@ while memLen <= trials or calcLen <= trials:
 			problem = "%s + %s" % (n1, n2)
 			solution = str(n1 + n2)
 
-			if problem not in memProblems and problem not in calcProblems:
+			if problem not in memProblems and problem not in calcProblems and problem not in incorrects:
 				badProblem = False
 
 	subject.inputData(trial, "problem" ,problem)
@@ -242,7 +240,7 @@ while memLen <= trials or calcLen <= trials:
 		elif strategy == "calc":
 			calcProblems.append(problem)
 	else:
-		problemHeap.append(problem)
+		incorrects.append(problem)
 	
 	trial = trial + 1
 
