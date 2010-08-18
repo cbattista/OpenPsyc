@@ -84,23 +84,24 @@ class RecursiveTrim:
 			self.std = summary[0]['std']
 			self.count = summary[0]['ccount']
 
-			mapFunc = Code("function() {"
-						"emit(this.%s, 1);"
-						 "}" % (self.measure))
+			if self.maxSD:
 
-			#zscore = Math.abs(this.%s - %s) / %s; emit(zscore, zscore);}" % (measure, avg, std))
-			reduceFunc = Code("function(obj, prev) {"
-						"zscore = Math.abs(obj - %s) / %s;"
-						"return zscore; }" % (self.avg, self.std))
+				mapFunc = Code("function() {"
+							"emit(this.%s, 1);"
+							 "}" % (self.measure))
 
-			result = self.posts.map_reduce(map=mapFunc, reduce=reduceFunc)
+				reduceFunc = Code("function(obj, prev) {"
+							"zscore = Math.abs(obj - %s) / %s;"
+							"return zscore; }" % (self.avg, self.std))
 
-			item = result.find().sort('value', -1)[0]
+				result = self.posts.map_reduce(map=mapFunc, reduce=reduceFunc)
 
-			if item['value'] > self.maxSD:
-				#print "Removing %s : %s" % (self.measure, item['_id'])
-				self.posts.remove({self.measure:item['_id']})
-				self.Trim()
+				item = result.find().sort('value', -1)[0]
+
+				if item['value'] > self.maxSD:
+					#print "Removing %s : %s" % (self.measure, item['_id'])
+					self.posts.remove({self.measure:item['_id']})
+					self.Trim()
 		else:
 			self.avg = 0
 			self.std = 0
