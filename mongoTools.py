@@ -313,9 +313,14 @@ class WriteTable:
 		exec(myString)
 
 		finalHeaders = []
+
+		self.headerList = headerList	
+	
 		for h in headerList:
 			finalHeaders.append(h + "_%s" % self.measure)
 			finalHeaders.append(h + "_count")
+
+		self.finalHeaders = finalHeaders
 
 		subjects = self.posts.distinct(self.subject)
 
@@ -415,98 +420,29 @@ class WriteTable:
 
 
 	def WriteForSPSS(self):
-		gDict = {}
-
-		#get a list of all the conditions within each grouping factor
-
-		matchingPosts = self.posts.find(self.condition)
-
-		for g in self.groupBy:
-			cats = matchingPosts.distinct(g)
-			gDict[g] = cats
-
-
-		myString = "headerItems = []\nheaderList = []\n"
-		tabby = ""
-
-		gString = str(self.groupBy)
-		gString = gString.strip('[')
-		gString = gString.strip(']')
-		
-		dString = ""
-		lString = ""
-
-
-		for g in self.groupBy:
-			dString = "%s,'%s' : %s" % (dString, g, g)
-			if lString == "":
-				lString = "str(%s)" % g
-			else:
-				lString = lString + "+ \"_\" + str(" + g + ")"
-
-
-		dString = "{" + dString.lstrip(',') + "}"
-
-
-		#create the big ol' for loop, one for each grouping factor
-		for g in self.groupBy:
-			myString = "%s%sfor %s in gDict['%s']:\n" % (myString, tabby, g, g)
-			tabby = tabby + "\t" 
-
-		#now 
-		myString = "%s%sheaderItems.append(%s)\n" % (myString, tabby, dString)
-		myString = "%s%sheaderList.append(%s)" % (myString, tabby, lString)
-
-		exec(myString)
-
-		finalHeaders = []
-		for h in headerList:
-			finalHeaders.append(h + "_RT")
-			finalHeaders.append(h + "_count")
-
-		subjects = self.posts.distinct(self.subject)
-
 		lines = []
-
 		for s_id in self.sDict.keys():
 			line = "%s" % s_id
 
 			lineDict = {}
 
-			reduceFunc = Code("""
-			function(obj,prev) { 
-				meas = obj.%s;
-				if (Math.abs(meas - %s) <= (%s * %s)) {
-					prev.csum += meas; 
-					prev.ccount++; 
-					prev.ss += meas * meas;
-				}
-			}
-			""" % (self.measure, self.sAVG[s_id], self.sSD[s_id], self.maxSD))
-
-
-			c = self.condition
-			c[self.subject] = s_id
-
-			rows = self.posts.group(key=self.groupBy, condition=c, initial=self.initial, reduce=reduceFunc, finalize = self.finalize)
-
-			for row in rows:
+			for row in self.sDict[s_id]:
 				col = ""
 				for g in self.groupBy:
 					col = col + "_" + str(row[g])
 				col = col.strip("_")
-				lineDict[col+ "_RT"] = row['avg']
-				lineDict[col+ "_count"] = row['ccount']
+				lineDict[col+ "_%s" % self.measure] = row['avg']
+				lineDict[col+ "_count"] = row['count']
 
-			for header in headerList:
+			for header in self.headerList:
 				try:
-					line = "%s, %3.3f, %i" % (line, lineDict[header + "_RT" ], int(lineDict[header + "_count"]))
+					line = "%s, %s, %i" % (line, lineDict["%s_%s" % (header, self.measure)], int(lineDict[header + "_count"]))
 				except KeyError:
 					line = "%s, NA, NA" % line
 
 			lines.append(line)
 
-		self.Write([self.subject] + finalHeaders,lines,"csv")	
+		self.Write([self.subject] + self.finalHeaders,lines,"csv")	
 		
 	def Write(self, headers, lines, ext):
 
