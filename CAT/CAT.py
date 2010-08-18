@@ -7,15 +7,21 @@ from VisionEgg.Core import get_default_screen, Viewport
 from VisionEgg.FlowControl import Presentation, FunctionController, TIME_SEC_ABSOLUTE, FRAMES_ABSOLUTE
 from VisionEgg.Textures import *
 import serial
-import Subject
 import pickle
 import time
 import random
 
 from pygame.locals import *
 
-from experiments import printWord, printText
 import sys
+import os
+
+#suckas need to changes this on they home computaz
+sys.path.append('/home/cogdev/code/OpenPsyc')
+
+from experiments import printWord, printText
+import subject
+
 
 ###COLLECT SUBJECT INFO
 myArgs = sys.argv
@@ -29,7 +35,7 @@ except:
 	trials = 3
 
 #create subject
-subject = Subject.Subject(number, 1, 1)
+subject = subject.Subject(number, 1, 1)
 
 ###SET SCREEN
 screen = get_default_screen()
@@ -68,6 +74,8 @@ def problem_controller(f_abs):
 #strategy control, SRBox buttons
 def strategy_controller(f_abs):
 	global strategy
+	global ACC
+	global misfire
 
 	if f_abs == 1:
 		onset = time.time()
@@ -76,47 +84,38 @@ def strategy_controller(f_abs):
 		while ser.isOpen():
 			x=chr(0)
 			x = ser.read()
-			if ord(x) == 16:
-				offset = time.time()
-				subject.inputData(trial, "stratRT", offset-onset)
-				subject.inputData(trial, "strategy", "calc")
-				strategy = "calc"
-				ser.close()
-
-			elif ord(x) == 1:
-				offset = time.time()
-				subject.inputData(trial, "stratRT", offset-onset)
-				subject.inputData(trial, "strategy", "mem")
+			if ord(x) == 1:
 				strategy = "mem"
 				ser.close()
+				p2.parameters.go_duration = (0, 'frames')
+
+			elif ord(x) == 2:
+				strategy = "calc"
+				ser.close()
+				p2.parameters.go_duration = (0, 'frames')
+
+			elif ord(x) == 4:
+				ACC = 1
+				
+			elif ord(x) == 8:
+				ACC = 0
+
+			elif ord(x) == 16:
+				misfire = 1
+				
+			
 
 
 #experimenter grading, space & escape
 def key_handler(event):
-	global ACC
-	global falsePos
-	global trueNeg
-	global memLen
-	global calcLen
+	if event.key == K_ESCAPE:
+		print "NEED A REGRADING FUNCTION HERE WOO"
 
-	if event.key == K_c:
-		subject.inputData(trial, "ACC", 1)
-		ACC = 1
-		p2.parameters.go_duration = (0, 'frames')
-	elif event.key == K_i:
-		subject.inputData(trial, "ACC", 0)
-		ACC = 0
-		p2.parameters.go_duration = (0, 'frames')
-	elif event.key == K_f:
-		falsePos = 1
-	elif event.key == K_t:
-		trueNeg = 1
-	"""
-	elif event.key == K_ESCAPE:
+	elif event.key == K_q:
+		print "QUIT PROGRAM WOOO"
 		p2.parameters.go_duration = (0, 'frames')
 		memLen = trials
 		calcLen = trials
-	"""
 
 
 #problem adjustment values
@@ -196,17 +195,18 @@ while memLen <= trials or calcLen <= trials:
 			problem = "%s + %s" % (n1, n2)
 			solution = str(n1 + n2)
 
-			if problem not in memProblems and problem not in calcProblems and problem not in incorrects:
+			previousProblems = memProblems + calcProblems + incorrects
+
+			if problem not in previousProblems:
 				badProblem = False
 
 	subject.inputData(trial, "problem" ,problem)
-	#default values for FP and TN
-	falsePos = 0
-	trueNeg = 0
+	#default values for misfiring voice key
+	misfire = 0
 
 
 	#generate texts
-	strat2 = "Memory (left button) or calculation (right button)?"
+	strat2 = "Please describe your strategy"
 
 	viewtext, viewport = printWord(screen, problem, 60, (255, 255, 255), h_anchor = 2.75)
 	solText, solPort = printWord(screen, solution, 60, (255, 255, 255), v_anchor = 0.5)
@@ -226,19 +226,22 @@ while memLen <= trials or calcLen <= trials:
 	p2.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, key_handler)]        
 	p2.go()
 
-	subject.inputData(trial, "falsePos", falsePos)
-	subject.inputData(trial, "trueNeg", trueNeg)
+	subject.inputData(trial, "misfire", misfire)
 
 	#blank screen
 	p3 = Presentation(go_duration=(1.5, 'seconds'), viewports=[fixCross])
 	p3.go()
 
 	#add problem to appropriate list based on strategy and grade
+	subject.inputData(trial, "ACC", ACC)
+	subject.inputData(trial, "strategy", strategy)
+
 	if ACC:
 		if strategy == "mem":
 			memProblems.append(problem)
 		elif strategy == "calc":
 			calcProblems.append(problem)
+		
 	else:
 		incorrects.append(problem)
 	
@@ -248,14 +251,6 @@ while memLen <= trials or calcLen <= trials:
 
 	memLen = len(memProblems)
 	calcLen = len(calcProblems)
-
-print memProblems
-print calcProblems
-print problemHeap	
-
-#save problem lists
-subject.inputData(0, "memProblems", memProblems)
-subject.calcProblems = (0, "calcProblems", calcProblems)
 
 #save sub
 subject.printData()
