@@ -71,17 +71,14 @@ class PRTFile:
 		self.VARs = VARs
 
 	def processEPrime(self, txt):
-		print txt
 		f = open(txt, 'r')
 		lines = map(strip, f.readlines())
 		f.close()
 
-		print unicode(lines[0])
 
-		i1 = lines.index("u*** Header Start ***")
-		i2 = lines.index("u*** Header End ***")
+		i1 = lines.index("*** Header Start ***")
+		i2 = lines.index("*** Header End ***")
 
-		print i1, i2
 
 		header = lines[i1+1:i2]
 
@@ -116,8 +113,6 @@ class PRTFile:
 				k = frags[0]
 				value = frags[1]
 
-				print k, value
-
 				if first:
 					index[k] = hindex
 					VARs[k] = []
@@ -131,8 +126,6 @@ class PRTFile:
 			elif d == "*** LogFrame End ***":
 				first = False
 
-		print VARs
-				
 		self.VARs = VARs
 		self.fname = "%s_%s_%s.prt" % (info['Subject'], info['Experiment'], info['Session'])
 
@@ -199,8 +192,6 @@ class PRTFile:
 			l2 = codeDict.keys()
 			l1.sort()
 			l2.sort()
-			print l1
-			print l2
 
 			if l1 != l2:
 				print "Keys don't match"
@@ -225,7 +216,6 @@ class PRTFile:
 		print "%s created succesfully" % self.fname
 
 	def makePRT(self):
-		#print prtDict
 		prtDict = self.prtDict
 
 		keys = prtDict.keys()
@@ -233,11 +223,9 @@ class PRTFile:
 
 		prtString = "NrOfConditions:   %i\n\n" % len(keys)
 
-		#print self.codeDict
 
 		for k in keys:
 			values = prtDict[k]
-			#print k
 			prtString = "%s%s\n%i\n\n" % (prtString, k, len(values))
 			if values:
 				for v in values:
