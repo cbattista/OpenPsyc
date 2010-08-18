@@ -42,6 +42,7 @@ def StringToType(value):
 
 def strip(i):
 	i = i.strip()
+	i = i.replace('\t', '')
 	return i
 
 class RecursiveTrim:
@@ -183,6 +184,7 @@ class ReadTable:
 		print "The contents of %s have been uploaded" % (csv)
 
 	def processEPrime(self, txt):
+		#print txt
 		f = open(txt, 'r')
 		lines = map(strip, f.readlines())
 
@@ -205,12 +207,13 @@ class ReadTable:
 			else:
 				info[KeySafe(frags[0])] = StringToType(frags[1])
 
-		i1 = lines.index("Level: 2")
+		i1 = i2
 
 		dataLines = lines[i1 + 1:]
 
 		row = {}
 		for d in dataLines:
+			#print d
 			for k in info.keys():
 				row[k] = info[k]
 			if d.count(":"):
@@ -225,6 +228,7 @@ class ReadTable:
 			elif d == "*** LogFrame End ***":
 				if row:
 					self.posts.insert(row)
+					#print row
 				row = {}
 				
 		print "The contents of %s have been uploaded" % (txt)
@@ -372,7 +376,10 @@ class WriteTable:
 
 			#add a frequency field to the items
 			for i in items:
-				i['freq'] = i['count'] / total * 100.
+				if total > 0:
+					i['freq'] = i['count'] / total * 100.
+				else:
+					i['freq'] = "NA"
 
 			sDict[str(s_id)] = items
 
@@ -460,7 +467,7 @@ class WriteTable:
 
 		lines = []
 
-		for s_id in self.sSD.keys():
+		for s_id in self.sDict.keys():
 			line = "%s" % s_id
 
 			lineDict = {}
