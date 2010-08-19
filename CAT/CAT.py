@@ -140,7 +140,12 @@ problemHeap = []
 #list of incorrect problems
 incorrects = []
 
-#these will be the list of problems by strategy
+#these will be the list of UNCONFIRMED problems by strategy
+
+memTemp = []
+calcTemp = []
+
+#these will be the list of CONFIRMED problems by strategy
 memProblems = []
 calcProblems = []
 
@@ -158,8 +163,18 @@ while memLen <= trials or calcLen <= trials:
 
 	badProblem = True
 
-	if len(problemHeap):
-		problem = problemHeap.pop()
+	#if either of the bins is full, definitely check
+	if len(memTemp) >= trials or len(calcTemp) >= trials:
+		verify = 1
+	#if they are getting pretty full, increase the odds of checking
+	elif len(memTemp) >= (trials/2) or len(calcTemp) >= (trials/2):
+		verify = random.choice([0, 1])
+	#otherwise give it 1/3 odds of checking
+	else:
+		verify = random.choice([1, 0, 0, 0])
+
+	if len(problemHeap) and verify:
+		ns = problemHeap.pop(0)
 
 	else:
 
@@ -191,19 +206,25 @@ while memLen <= trials or calcLen <= trials:
 			else:
 				pass
 
-			#format problem
-			problem = "%s + %s" % (n1, n2)
-			solution = str(n1 + n2)
+			ns = [n1, n2]
+			ns.sort()
 
 			previousProblems = memProblems + calcProblems + incorrects
 
-			if problem not in previousProblems:
+			if ns not in previousProblems:
 				badProblem = False
 
-	subject.inputData(trial, "problem" ,problem)
+	subject.inputData(trial, "n1", ns[0])
+	subject.inputData(trial, "n2", ns[1])
+	solution = str(ns[0] + ns[1])
+
+	random.shuffle(ns)
+	problem = "%s + %s" % (ns[0], ns[1])
+	subject.inputData(trial, "problem", problem)
+
 	#default values for misfiring voice key
 	misfire = 0
-
+	ACC = 1
 
 	#generate texts
 	strat2 = "Please describe your strategy"
@@ -236,11 +257,25 @@ while memLen <= trials or calcLen <= trials:
 	subject.inputData(trial, "ACC", ACC)
 	subject.inputData(trial, "strategy", strategy)
 
+	ns.sort()
+
 	if ACC:
-		if strategy == "mem":
-			memProblems.append(problem)
+		if strategy == "mem" and ns in memTemp:
+			memProblems.append(ns)
+			memTemp.remove(ns)
+			subject.inputData(trial, "verified", 1)
+		elif strategy == "mem":
+			memTemp.append(ns)
+			problemHeap.append(ns)
+			subject.inputData(trial, "verified", 0)
+		elif strategy == "calc" and ns in calcTemp:
+			calcProblems.append(ns)
+			calcTemp.remove(ns)
+			subject.inputData(trial, "verified", 1)
 		elif strategy == "calc":
-			calcProblems.append(problem)
+			calcTemp.append(ns)
+			problemHeap.append(ns)
+			subject.inputData(trial, "verified", 0)
 		
 	else:
 		incorrects.append(problem)
