@@ -51,12 +51,10 @@ class RecursiveTrim:
 		db = MongoAdmin("Trimmer")
 
 		posts = db.getTable("Trim").posts
-		#print posts
 
 		posts.remove({})
 
 		for row in cursor:
-			#print row
 			posts.insert(row)
 
 		self.posts = posts
@@ -99,7 +97,6 @@ class RecursiveTrim:
 				item = result.find().sort('value', -1)[0]
 
 				if item['value'] > self.maxSD:
-					#print "Removing %s : %s" % (self.measure, item['_id'])
 					self.posts.remove({self.measure:item['_id']})
 					self.Trim()
 		else:
@@ -185,7 +182,6 @@ class ReadTable:
 		print "The contents of %s have been uploaded" % (csv)
 
 	def processEPrime(self, txt):
-		#print txt
 		f = open(txt, 'r')
 		lines = map(strip, f.readlines())
 
@@ -214,7 +210,6 @@ class ReadTable:
 
 		row = {}
 		for d in dataLines:
-			#print d
 			for k in info.keys():
 				row[k] = info[k]
 			if d.count(":"):
@@ -229,14 +224,13 @@ class ReadTable:
 			elif d == "*** LogFrame End ***":
 				if row:
 					self.posts.insert(row)
-					#print row
 				row = {}
 				
 		print "The contents of %s have been uploaded" % (txt)
 
 			
 class WriteTable:
-	def __init__(self, measure, groupBy, screen_condition, condition, dbName, table, name="", maxSD = 3, subject="s_id", count=False):
+	def __init__(self, measures, groupBy, screen_condition, condition, dbName, table, name="", maxSD = 3, subject="s_id", count=False):
 		self.groupBy = groupBy
 
 		dbA = MongoAdmin(dbName)
@@ -255,7 +249,7 @@ class WriteTable:
 				self.name = self.name + "_" + g
 			self.name = self.name + "_" + measure
 		
-		self.measure = measure
+		self.measures = measures
 		self.subject = subject
 		self.count = count
 
@@ -342,9 +336,10 @@ class WriteTable:
 		self.headerList = validHeaderList	
 	
 		for h in validHeaderList:
-			finalHeaders.append(h + "_%s" % self.measure)
-			if self.count:
-				finalHeaders.append(h + "_count")
+			for m in self.measures:
+				finalHeaders.append(h + "_%s" % m)
+				if self.count:
+					finalHeaders.append(h + "%s_count" % m)
 
 		self.finalHeaders = finalHeaders
 
@@ -353,15 +348,6 @@ class WriteTable:
 			print "Processing Subject %s" % s_id
 			c = copy.deepcopy(self.condition)
 			c[self.subject] = s_id
-
-			reduceFunc = Code("""
-			function(obj,prev) { 
-				meas = obj.%s;
-				prev.csum += meas; 
-				prev.ccount++; 
-				prev.ss += meas * meas;
-				}
-			""" % (self.measure))
 
 			gbKey = {}
 
@@ -379,19 +365,21 @@ class WriteTable:
 					r[k] = h[k]
 					c[k] = h[k]
 						
-				rows = self.posts.find(c)
+				for m in self.measures:
 
-				if rows.count():
-					trimmer = RecursiveTrim(rows, self.measure, self.maxSD)
-					avg, std, count = trimmer.GetValues()
-				else:
-					avg = "NA"
-					std = "NA"
-					count = 0
+					rows = self.posts.find(c)
+
+					if rows.count():
+						trimmer = RecursiveTrim(rows, m, self.maxSD)
+						avg, std, count = trimmer.GetValues()
+					else:
+						avg = "NA"
+						std = "NA"
+						count = 0
 				
-				r['avg'] = avg
-				r['std'] = std
-				r['count'] = int(count)
+					r['%s' % m] = avg
+					r['%s_std' % m] = std
+					r['count'] = int(count)
 			
 				items.append(copy.deepcopy(r))
 
@@ -414,7 +402,7 @@ class WriteTable:
 
 	def WriteForR(self):
 
-		headers = [self.subject] + self.groupBy + ["avg"] + ["freq"] + ["count"]
+		headers = [self.subject] + self.groupBy + self.measures + ["freq"] + ["count"]
 
 		lines = []
 		for k in self.sDict.keys():
@@ -453,13 +441,15 @@ class WriteTable:
 				for g in self.groupBy:
 					col = col + "_" + str(row[g])
 				col = col.strip("_")
-				lineDict[col+ "_%s" % self.measure] = row['avg']
+				for m in self.measures:
+					lineDict[col+ "_%s" % m] = row[m]
 				if self.count:
 					lineDict[col+ "_count"] = row['count']
 
 			for header in self.headerList:
 				try:
-					line = "%s, %s" % (line, lineDict["%s_%s" % (header, self.measure)])
+					for m in self.measures:
+						line = "%s, %s" % (line, lineDict["%s_%s" % (header, m)])
 					if self.count:
 						line = "%s, %i" % (line, lineDict[header + "_count"])
 				except KeyError:
