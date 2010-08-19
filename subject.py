@@ -42,7 +42,7 @@ class Subject:
 			trial = self.results[t]
 			trialKeys = trial.keys()
 			trialKeys.sort()
-			header = ""
+			header = "trial"
 			for tk in trialKeys:
 				header = "%s,%s" % (header, tk)
 				line = "%s,%s" % (line, trial[tk])
