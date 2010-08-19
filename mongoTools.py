@@ -208,6 +208,7 @@ class ReadTable:
 
 		dataLines = lines[i1 + 1:]
 
+		trial = 1
 		row = {}
 		for d in dataLines:
 			for k in info.keys():
@@ -223,6 +224,9 @@ class ReadTable:
 		
 			elif d == "*** LogFrame End ***":
 				if row:
+					row['trial'] = trial
+					trial = trial + 1
+					print row
 					self.posts.insert(row)
 				row = {}
 				
@@ -402,24 +406,34 @@ class WriteTable:
 
 	def WriteForR(self):
 
-		headers = [self.subject] + self.groupBy + self.measures + ["freq"] + ["count"]
+		headers = [self.subject] + self.groupBy + self.measures
+		if self.count:
+			headers = header + ["freq"] + ["count"]
 
 		lines = []
 		for k in self.sDict.keys():
 			for row in self.sDict[k]:
 				line = ""
-				for h in headers:
-					value = row[h]
-					if value:
-						line = "%s,%s" % (line, row[h])
-					else:
-						if h == "freq" or h == "count":
-							line = "%s,0" % (line)
+
+				valid = 0
+				#first check for the validity of this line
+				for m in self.measures:
+					if str(row[m]) != "NA":
+						valid = 1
+				
+				if valid:
+					for h in headers:
+						value = str(row[h])
+						if value != "NA":
+							line = "%s,%s" % (line, row[h])
 						else:
-							line = "%s,NA" % (line)
-				line = line.lstrip(',')
-				line = "%s" % line
-				lines.append(line)
+							if h == "freq" or h == "count":
+								line = "%s,0" % (line)
+							else:
+								line = "%s,NA" % (line)
+					line = line.lstrip(',')
+					line = "%s" % line
+					lines.append(line)
 
 				
 		self.Write(headers,lines,"dat")
