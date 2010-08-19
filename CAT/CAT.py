@@ -124,7 +124,7 @@ subtract = [1,2,3]
 
 memAdd = [-1, -2, 1, 2]
 
-begin = [2,3,4]
+begin = [2,3,4,5]
 
 #initial variables
 trial = 1
@@ -155,7 +155,7 @@ calcLen = 0
 #default strategy
 strategy = None
 
-while memLen <= trials or calcLen <= trials:
+while len(memProblems) < trials or len(calcProblems) < trials:
 	#generate problem based on last round
 	random.shuffle(add)
 	random.shuffle(subtract)
@@ -164,6 +164,8 @@ while memLen <= trials or calcLen <= trials:
 	badProblem = True
 
 	#if either of the bins is full, definitely check
+	if len(memProblems) >= trials or len(calcProblems) >= trials:
+		verify = 1
 	if len(memTemp) >= trials or len(calcTemp) >= trials:
 		verify = 1
 	#if they are getting pretty full, increase the odds of checking
@@ -172,6 +174,8 @@ while memLen <= trials or calcLen <= trials:
 	#otherwise give it 1/3 odds of checking
 	else:
 		verify = random.choice([1, 0, 0, 0])
+
+
 
 	if len(problemHeap) and verify:
 		ns = problemHeap.pop(0)
@@ -229,20 +233,24 @@ while memLen <= trials or calcLen <= trials:
 	#generate texts
 	strat2 = "Please describe your strategy"
 
+	info = "mems: %s/%s, tmems: %s, calcs: %s/%s, tcalcs: %s, heap: %s" % (len(memProblems), trials, len(memTemp), len(calcProblems), trials, len(calcTemp), len(problemHeap))
+
 	viewtext, viewport = printWord(screen, problem, 60, (255, 255, 255), h_anchor = 2.75)
-	solText, solPort = printWord(screen, solution, 60, (255, 255, 255), v_anchor = 0.5)
+	solText, solPort = printWord(screen, solution, 60, (255, 255, 255), v_anchor = 1.0)
+	infoText, infoPort = printWord(screen, info, 36, (255, 255, 255), v_anchor = 0.5)
+	
 	stratText, stratPort = printWord(screen, strat2, 60, (255, 255, 255), h_anchor = 2.25)
 	expText, expPort = printWord(screen, problem, 60, (255, 255, 255), v_anchor = 1.5)
 	fixText, fixCross = printWord(screen, '', 60, (255, 255, 255), h_anchor = 2.5)
 
 	#BLOCK 1 - Problem & RESPONSE
 
-	p = Presentation(go_duration=('forever', ), viewports=[viewport, solPort, expPort])
+	p = Presentation(go_duration=('forever', ), viewports=[viewport, solPort, expPort, infoPort])
 	p.add_controller(None, None, FunctionController(during_go_func=problem_controller, temporal_variables = FRAMES_ABSOLUTE))
 	p.go()
 
 	#BLOCK 2 - STRATEGY SELECTION & GRADING
-	p2 = Presentation(go_duration=('forever', ), viewports=[solPort, stratPort])
+	p2 = Presentation(go_duration=('forever', ), viewports=[solPort, infoPort, stratPort])
 	p2.add_controller(None, None, FunctionController(during_go_func=strategy_controller, temporal_variables = FRAMES_ABSOLUTE))
 	p2.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, key_handler)]        
 	p2.go()
@@ -276,16 +284,22 @@ while memLen <= trials or calcLen <= trials:
 			calcTemp.append(ns)
 			problemHeap.append(ns)
 			subject.inputData(trial, "verified", 0)
+			
+		#if we have enough memory or calcs, take those suckas out of the heap
+		if len(memProblems) >= trials:
+			problemHeap = calcTemp
+		elif len(calcProblems) >= trials:
+			problemHeap = memTemp
 		
 	else:
 		incorrects.append(problem)
+		subject.inputData(trial, "verified", "NA")
 	
 	trial = trial + 1
 
-	subject.printData()
 
-	memLen = len(memProblems)
-	calcLen = len(calcProblems)
+
+	subject.printData()
 
 #save sub
 subject.printData()
@@ -294,3 +308,4 @@ subject.memProblems = memProblems
 subject.calcProblems = calcProblems
 
 subject.preserve()
+
