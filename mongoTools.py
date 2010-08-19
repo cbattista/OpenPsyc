@@ -236,7 +236,7 @@ class ReadTable:
 
 			
 class WriteTable:
-	def __init__(self, measure, groupBy, screen_condition, condition, dbName, table, name="", maxSD = 3, subject="s_id"):
+	def __init__(self, measure, groupBy, screen_condition, condition, dbName, table, name="", maxSD = 3, subject="s_id", count=False):
 		self.groupBy = groupBy
 
 		dbA = MongoAdmin(dbName)
@@ -257,6 +257,7 @@ class WriteTable:
 		
 		self.measure = measure
 		self.subject = subject
+		self.count = count
 
 		#initialization and finalization for the groupBy query - note that the reduce functions are constructed at run time to correspond with the necessary subject SD screen
 		self.initial = {"csum":0, "ccount":0, "ss":0, "avg":0, "std":0}
@@ -312,25 +313,44 @@ class WriteTable:
 
 		exec(myString)
 
-		finalHeaders = []
-
-		self.headerList = headerList	
-	
-		for h in headerList:
-			finalHeaders.append(h + "_%s" % self.measure)
-			finalHeaders.append(h + "_count")
-
-		self.finalHeaders = finalHeaders
-
 		subjects = self.posts.distinct(self.subject)
 
 		groupBy = [self.subject] + self.groupBy
 
-		#filter by subject SD
 
-		lines = []
+		#firstly, let's check and see whether these combos are even valid
 
+		validHeaderItems = []
+		validHeaderList = []
+
+		for h, hl in zip(headerItems, headerList):
+			myC = copy.deepcopy(self.condition)
+			for k in h.keys():
+				myC[k] = h[k]
+				
+			valid = self.posts.find(myC).count()
+			
+			if valid:
+				validHeaderItems.append(h)
+				validHeaderList.append(hl)
+		
+		headerItems = validHeaderItems
+		self.headerItems = headerItems
+		
+		finalHeaders = []
+
+		self.headerList = validHeaderList	
+	
+		for h in validHeaderList:
+			finalHeaders.append(h + "_%s" % self.measure)
+			if self.count:
+				finalHeaders.append(h + "_count")
+
+		self.finalHeaders = finalHeaders
+
+		#now let's go through and calculate the means for the valid combos
 		for s_id in self.s_ids:
+			print "Processing Subject %s" % s_id
 			c = copy.deepcopy(self.condition)
 			c[self.subject] = s_id
 
@@ -350,7 +370,7 @@ class WriteTable:
 
 			items = []
 
-			for h in headerItems:
+			for h in validHeaderItems:
 
 				r = {self.subject : s_id}
 				myC = copy.deepcopy(c)
@@ -426,19 +446,26 @@ class WriteTable:
 
 			lineDict = {}
 
+			print "Writing Subject %s" % s_id
+
 			for row in self.sDict[s_id]:
 				col = ""
 				for g in self.groupBy:
 					col = col + "_" + str(row[g])
 				col = col.strip("_")
 				lineDict[col+ "_%s" % self.measure] = row['avg']
-				lineDict[col+ "_count"] = row['count']
+				if self.count:
+					lineDict[col+ "_count"] = row['count']
 
 			for header in self.headerList:
 				try:
-					line = "%s, %s, %i" % (line, lineDict["%s_%s" % (header, self.measure)], int(lineDict[header + "_count"]))
+					line = "%s, %s" % (line, lineDict["%s_%s" % (header, self.measure)])
+					if self.count:
+						line = "%s, %i" % (line, lineDict[header + "_count"])
 				except KeyError:
-					line = "%s, NA, NA" % line
+					line = "%s, NA" % line
+					if self.count:
+						line = "%s, NA" % line
 
 			lines.append(line)
 
