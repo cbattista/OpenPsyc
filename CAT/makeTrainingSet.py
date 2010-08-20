@@ -3,73 +3,134 @@
 import sys
 import os
 import glob
-import dbAdmin
+import mongoTools
+import random
 
 try:
 	number = sys.argv[1]
 except:
 	sys.stderr("You need to specify a participant ID")
 
-db = dbAdmin.dbAdmin("CAT")
+db = mongoTools.MongoAdmin("CAT2")
+
+posts = db.getTable("production_pre").posts
+
+t_posts = db.getTable("training_sets").posts
+
+v_posts = db.getTable("ver_sets").posts
+
+p_posts = db.getTable("post_sets").posts
 
 f = open("P_%s.csv" % number, "w")
 
+t_posts.remove({'s_id':number})
+v_posts.remove({'s_id':number})
+p_posts.remove({'s_id':number})
+
 strategies = ["calc", "mem"]
 
-for strategy in strategies:
-	if strategy == "calc":
-		orderby = "DESC"
-	elif strategy == "mem":
-		orderby = "ASC"
+#for r in posts.find():
+#	print r
 
+print number
 
-	sql = "SELECT n1, n2, RT, ACC FROM pre_table WHERE number = %s AND strategy = '%s' ORDER BY (n1 + n2) %s" % (number, strategy, orderby)
-
+for s in strategies:
 	probList = []
 	fullList = []
 
-	for n1, n2, RT, acc in db.query(sql):
-		#print n1, n2, RT
-		prob = [n1, n2]
-		prob.sort()
+	result = posts.find({'strategy' : s, 's_id' : int(number), 'verified' : 1})
+	for r in result:
+		n1 = r['n1']
+		n2 = r['n2']
+		ns = [n1, n2]
+		ns.sort()
 
-		if int(acc):
-			fullList.append(prob)
-			if prob not in probList:
-				bad = 0
-				for pref in probList:
-					if prob[0] in pref or prob[1] in pref:
-						bad = 1
-				if not bad:
-					probList.append(prob)
-		else:
-			probList.append(prob)
-
+		fullList.append(ns)
+		if ns not in probList:
+			bad = 0
+			for pref in probList:
+				if ns[0] in pref or ns[1] in pref:
+					bad = 1
+					
+			if not bad:
+				probList.append(ns)
 	quit = 0
-
+	
 	while not quit:
-		if len(probList) >= 15:
+		if len(probList) >= 20:
 			quit = 1
-
-		if len(fullList):
-			prob = fullList.pop()
+			
 		
-			if prob not in probList:
-				probList.append(prob)
-
+		if len(fullList):
+			ns = fullList.pop()
+			if ns not in probList:
+				probList.append(ns)
 		else:
 			prob = "NA"
-			probList.append(prob)
+			probList.append(ns)
 
-	probList = probList[:15]
-
+	probList = probList[:20]
+	
+	#add the problems to the training set, output them
 	for p in probList:
-		line = "%s,%s,%s,%s\n" % (p[0], p[1], number, strategy)
+		row = {}
+		row['s_id'] = number
+		row['n1'] = p[0]
+		row['n2'] = p[1]
+		row['strategy'] = s
+		t_posts.insert(row)
+		line = "%s,%s,%s,%s\n" % (p[0], p[1], number, s)
 		f.write(line)
+
+	#add the problems to the verification set, output them
+	random.shuffle(probList)
+	for p in probList[:10]:
+		row = {}
+		row['s_id'] = number
+		row['n1'] = p[0]
+		row['n2'] = p[1]
+		row['orig_strat'] = s
+		row['trained'] = 'trained'
+		v_posts.insert(row)
+		p_posts.insert(row)
+
+	postList = []
+
+	#print probList
+
+	#now get some untrained problems
+	result = posts.find({'strategy' : s, 's_id' : int(number), 'verified' : 1})
+	for r in result:
+		n1 = r['n1']
+		n2 = r['n2']
+		ns = [n1, n2]
+		ns.sort()
+		if ns not in probList:
+			postList.append(ns)
+			
+	print postList		
+			
+	random.shuffle(postList)
+
+	for p in postList[:10]:
+		row = {}
+		row['s_id'] = number
+		row['n1'] = p[0]
+		row['n2'] = p[1]
+		row['orig_strat'] = s
+		row['trained'] = "novel"
+		p_posts.insert(row)
+		v_posts.insert(row)
+		
+	for p in postList[10:20]:
+		row = {}
+		row['s_id'] = number
+		row['n1'] = p[0]
+		row['n2'] = p[1]
+		row['orig_strat'] = s
+		row['trained'] = "novel"
+		p_posts.insert(row)
+
 
 f.close()
 
-try:
-	db.close()
-except:
-	pass
