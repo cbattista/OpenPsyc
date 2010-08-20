@@ -15,6 +15,7 @@ from pygame.locals import *
 
 import sys
 import os
+import copy
 
 #suckas need to changes this on they home computaz
 sys.path.append('/home/cogdev/code/OpenPsyc')
@@ -114,8 +115,6 @@ def key_handler(event):
 	elif event.key == K_q:
 		print "QUIT PROGRAM WOOO"
 		p2.parameters.go_duration = (0, 'frames')
-		memLen = trials
-		calcLen = trials
 
 
 #problem adjustment values
@@ -149,11 +148,13 @@ calcTemp = []
 memProblems = []
 calcProblems = []
 
-memLen = 0
-calcLen = 0
-
 #default strategy
 strategy = None
+
+#default empty problem
+ns = []
+lastns = []
+lastlastns = []
 
 while len(memProblems) < trials or len(calcProblems) < trials:
 	#generate problem based on last round
@@ -163,19 +164,33 @@ while len(memProblems) < trials or len(calcProblems) < trials:
 
 	badProblem = True
 
-	#if either of the bins is full, definitely check
-	if len(memProblems) >= trials or len(calcProblems) >= trials:
+	#if the heap is half full, definitely check
+	if len(problemHeap) >= (trials/3):
 		verify = 1
-	if len(memTemp) >= trials or len(calcTemp) >= trials:
+	elif len(calcProblems) >= trials and len(problemHeap) > 3:
 		verify = 1
-	#if they are getting pretty full, increase the odds of checking
-	elif len(memTemp) >= (trials/2) or len(calcTemp) >= (trials/2):
+	#if we have all our memory problems and there are a few in the heap 
+	elif len(memProblems) >= trials and len(problemHeap) > 3:
+		verify = 1
+
+	#if we have enough temps to make a full set of calcs
+	elif (len(calcProblems) + len(calcTemp)) >= trials:
+		verify = 1
+	#if we have enough temps to make a full set of mems
+	elif (len(calcProblems) + len(calcTemp)) >= trials:
+		verify = 1
+
+	#if the heap is getting pretty full, increase odds of checking
+	elif len(problemHeap) >= (trials/4):
 		verify = random.choice([0, 1])
-	#otherwise give it 1/3 odds of checking
+	#if we have all our calc problems and there are a few in the heap
+	#otherwise give it 1/4 odds of checking
 	else:
 		verify = random.choice([1, 0, 0, 0])
 
-
+	#we don't want repeats, though, need a pad of 3
+	if (ns in problemHeap[:3] or (lastns in problemHeap[:3]) or (lastlastns in problemHeap[:3])) and verify:
+		verify = 0
 
 	if len(problemHeap) and verify:
 		ns = problemHeap.pop(0)
@@ -184,22 +199,23 @@ while len(memProblems) < trials or len(calcProblems) < trials:
 
 		while badProblem:
 			#if the strategy was "calculation", reduce the size of the number
-			if strategy == "calc" and memLen <= trials:
+			if strategy == "calc" and len(memProblems) < trials:
 				n1 = abs(n1 - subtract[0])
 				n2 = abs(n2 - subtract[1])
 				if n1 == 0:
 					n1 = 1
 				if n2 == 0:
 					n2 = 1
-			elif strategy == "calc" and memLen > trials:
+			elif strategy == "calc" and len(memProblems) >= trials:
 				n1 = n1 + add[0]
 				n2 = n2 + add[1]
 
 			#if the strategy was "memory", increase the size of the number
-			elif strategy == "mem" and calcLen <= trials:
+			elif strategy == "mem" and len(calcProblems) < trials:
 				n1 = n1 + add[0]
 				n2 = n2 + add[1]
-			elif strategy == "mem" and calcLen > trials:
+			#unlesss 
+			elif strategy == "mem" and len(calcProblems) >= trials:
 				n1 = abs(n1 + memAdd[0])
 				n2 = abs(n2 + memAdd[1])
 				if n1 == 0:
@@ -235,11 +251,11 @@ while len(memProblems) < trials or len(calcProblems) < trials:
 
 	info = "mems: %s/%s, tmems: %s, calcs: %s/%s, tcalcs: %s, heap: %s" % (len(memProblems), trials, len(memTemp), len(calcProblems), trials, len(calcTemp), len(problemHeap))
 
-	viewtext, viewport = printWord(screen, problem, 60, (255, 255, 255), h_anchor = 2.75)
+	viewtext, viewport = printWord(screen, problem, 60, (255, 255, 255), h_anchor = 2.9)
 	solText, solPort = printWord(screen, solution, 60, (255, 255, 255), v_anchor = 1.0)
 	infoText, infoPort = printWord(screen, info, 36, (255, 255, 255), v_anchor = 0.5)
 	
-	stratText, stratPort = printWord(screen, strat2, 60, (255, 255, 255), h_anchor = 2.25)
+	stratText, stratPort = printWord(screen, strat2, 60, (255, 255, 255), h_anchor = 2.7)
 	expText, expPort = printWord(screen, problem, 60, (255, 255, 255), v_anchor = 1.5)
 	fixText, fixCross = printWord(screen, '', 60, (255, 255, 255), h_anchor = 2.5)
 
@@ -266,24 +282,34 @@ while len(memProblems) < trials or len(calcProblems) < trials:
 	subject.inputData(trial, "strategy", strategy)
 
 	ns.sort()
+	lastns = copy.deepcopy(ns)
+	lastlastns = copy.deepcopy(lastns)
 
 	if ACC:
 		if strategy == "mem" and ns in memTemp:
 			memProblems.append(ns)
 			memTemp.remove(ns)
 			subject.inputData(trial, "verified", 1)
-		elif strategy == "mem":
+		elif strategy == "mem" and len(memProblems) < trials:
 			memTemp.append(ns)
 			problemHeap.append(ns)
 			subject.inputData(trial, "verified", 0)
+		elif strategy == "mem":
+			subject.inputData(trial, "verified", 0)
+			memTemp.append(ns)
+			#don't add to heap
+			
 		elif strategy == "calc" and ns in calcTemp:
 			calcProblems.append(ns)
 			calcTemp.remove(ns)
 			subject.inputData(trial, "verified", 1)
-		elif strategy == "calc":
+		elif strategy == "calc" and len(calcProblems) < trials:
 			calcTemp.append(ns)
 			problemHeap.append(ns)
 			subject.inputData(trial, "verified", 0)
+		elif strategy == "calc":
+			subject.inputData(trial, "verified", 0)
+			calcTemp.append(ns)
 			
 		#if we have enough memory or calcs, take those suckas out of the heap
 		if len(memProblems) >= trials:
@@ -296,8 +322,6 @@ while len(memProblems) < trials or len(calcProblems) < trials:
 		subject.inputData(trial, "verified", "NA")
 	
 	trial = trial + 1
-
-
 
 	subject.printData()
 
