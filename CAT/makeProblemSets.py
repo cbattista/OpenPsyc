@@ -71,7 +71,7 @@ for s in strategies:
 
 	probList = probList[:20]
 	
-	#add the problems to the training set, output them
+	#TRAINED PROBLEMS
 	for p in probList:
 		row = {}
 		row['s_id'] = number
@@ -96,9 +96,8 @@ for s in strategies:
 
 	postList = []
 
-	#print probList
-
-	#now get some untrained problems
+	###UNTRAINED PROBLEMS
+	
 	result = posts.find({'strategy' : s, 's_id' : int(number), 'verified' : 1})
 	for r in result:
 		n1 = r['n1']
@@ -108,10 +107,9 @@ for s in strategies:
 		if ns not in probList:
 			postList.append(ns)
 			
-	print postList		
-			
 	random.shuffle(postList)
 
+	#10 problems for the post training list and verification list
 	for p in postList[:10]:
 		row = {}
 		row['s_id'] = number
@@ -122,6 +120,7 @@ for s in strategies:
 		p_posts.insert(row)
 		v_posts.insert(row)
 		
+	#another 10 problems for the post training list only
 	for p in postList[10:20]:
 		row = {}
 		row['s_id'] = number
