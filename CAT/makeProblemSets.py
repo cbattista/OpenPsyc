@@ -32,8 +32,6 @@ strategies = ["calc", "mem"]
 #for r in posts.find():
 #	print r
 
-print number
-
 for s in strategies:
 	probList = []
 	fullList = []
