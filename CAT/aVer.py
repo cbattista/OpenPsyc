@@ -148,14 +148,21 @@ for dist, side, strategy in zip(dists, sides, strategies):
 		R = distractor
 	
 	probText, probPort = printWord(screen, problem, 60, (255, 255, 255), h_anchor = 2.9)
-	lt, l = printWord(screen, L, 60, (255, 255, 255), v_anchor = 0.5, h_anchor = 2.6)
-	rt, r = printWord(screen, R, 60, (255, 255, 255), v_anchor = 0.5, h_anchor = 3.3)	
+	lt, l = printWord(screen, L, 60, (255, 255, 255), h_anchor = 2.6)
+	rt, r = printWord(screen, R, 60, (255, 255, 255), h_anchor = 3.3)	
 	fixText, fixCross = printWord(screen, '', 60, (255, 255, 255), h_anchor = 2.5)
 
-	#BLOCK 1 - PROBLEM
-	p = Presentation(go_duration=('forever', ), viewports=[probPort, l, r])
+	#BLOCK 1 - PROBLEM, BLANK & POSSIBLE SOLUTIONS
+	problem = Presentation(go_duration=(2, 'seconds'), viewports=[probPort])
+	problem.go()
+
+	p3 = Presentation(go_duration=(0.5, 'seconds'), viewports=[fixCross])
+	p3.go()
+
+	p = Presentation(go_duration=('forever', ), viewports=[l, r])
 	p.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, key_handler)]  
 	p.go()
+
 	
 	subject.inputData(trial, "RT", RT)
 	subject.inputData(trial, "ACC", ACC)
