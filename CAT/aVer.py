@@ -98,7 +98,6 @@ def key_handler(event):
 			ACC = 1
 		else:
 			ACC = 0
-		print "right"
 		p.parameters.go_duration=(0, 'frames')
 
 
@@ -140,12 +139,12 @@ for dist, side, strategy in zip(dists, sides, strategies):
 	
 	if side == "l":
 		correct = "left"
-		L = distractor
-		R = solution
-	elif side == "r":
-		correct = "right"
 		L = solution
 		R = distractor
+	elif side == "r":
+		correct = "right"
+		L = distractor
+		R = solution
 	
 	probText, probPort = printWord(screen, problem, 60, (255, 255, 255), h_anchor = 2.9)
 	lt, l = printWord(screen, L, 60, (255, 255, 255), h_anchor = 2.6)
