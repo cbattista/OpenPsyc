@@ -10,7 +10,7 @@ from pygame.locals import *
 import sys
 import os
 import random
-
+import serial
 
 #suckas need to changes this on they home computaz
 sys.path.append('/home/cogdev/code/OpenPsyc')
@@ -18,6 +18,7 @@ sys.path.append('/home/cogdev/code/OpenPsyc')
 from experiments import printWord, printText
 from mongoTools import MongoAdmin
 import shuffler
+import subject
 
 try:
 	number = sys.argv[1]
@@ -25,14 +26,17 @@ except:
 	sys.stderr("You need to specify a participant ID")
 
 
+subject = subject.Subject(1, "VER_PRE")
+
 db = MongoAdmin("CAT2")
 posts = db.getTable("ver_sets").posts
 
 q = {}
 q['s_id'] = number
 
-memProblems = []
 calcProblems = []
+memProblems = []
+
 for r in posts.find(q):
 	ns = [r['n1'], r['n2']]
 
@@ -43,22 +47,22 @@ for r in posts.find(q):
 
 verProbs = calcProblems + memProblems
 
-print verProbs
-
-###SET SCREEN
+##SET SCREEN
 screen = get_default_screen()
 screen.parameters.bgcolor = (0, 0, 0)
 pygame.font.init()
 
 distractors = [2, -2]
 lOrR = ['l', 'r']
+strats = ['mem', 'calc']
+
+
 
 #strategy control, SRBox buttons
 def strategy_controller(f_abs):
 	global strategy
 
 	if f_abs == 1:
-		onset = time.time()
 		ser = serial.Serial(port=0, baudrate=19200)
 		ser.write('\xa0\xe0')
 		while ser.isOpen():
@@ -78,7 +82,10 @@ def strategy_controller(f_abs):
 def key_handler(event):
 	global correct 
 	global ACC
+	global RT
 	key = event.key
+
+	RT = p.time_sec_since_go
 	
 	if key == K_LALT:
 		if correct == "left":
@@ -101,17 +108,35 @@ dists = dShuffler.shuffle()
 sideShuffler = shuffler.Shuffler(lOrR, len(verProbs), 3)
 sides = sideShuffler.shuffle()
 
+sShuffler = shuffler.Shuffler(strats, len(verProbs), 3)
+strategies = sShuffler.shuffle()
 
 #generate texts
 strat2 = "Please describe your strategy"
 stratText, stratPort = printWord(screen, strat2, 60, (255, 255, 255), h_anchor = 2.7)
 	
 strategy = ""
+RT = 0
+ACC = 0
 
-for prob, dist, side in zip(verProbs, dists, sides):
+trial = 1
+for dist, side, strategy in zip(dists, sides, strategies):
+
+	if strategy == "mem":
+		prob = memProblems.pop()
+	elif strategy == "calc":
+		prob = calcProblems.pop()
+
 	problem = "%s + %s = ?" % (prob[0], prob[1])
 	solution = str(prob[0] + prob[1])
 	distractor = str(prob[0] + prob[1] + dist)
+	
+	subject.inputData(trial, "n1", prob[0])
+	subject.inputData(trial, "n2", prob[1])
+	subject.inputData(trial, "orig_strat", strategy)
+	subject.inputData(trial, "distractor", distractor)
+	subject.inputData(trial, "dist_side", side)
+	subject.inputData(trial, "dist_offset", dist)
 	
 	if side == "l":
 		correct = "left"
@@ -132,12 +157,23 @@ for prob, dist, side in zip(verProbs, dists, sides):
 	p.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, key_handler)]  
 	p.go()
 	
+	subject.inputData(trial, "RT", RT)
+	subject.inputData(trial, "ACC", ACC)
+	
 	#BLOCK 2 - STRATEGY SELECTION
-	p2 = Presentation(go_duration=('forever', ), viewports=[solPort, infoPort, stratPort])
+	p2 = Presentation(go_duration=('forever', ), viewports=[stratPort])
 	p2.add_controller(None, None, FunctionController(during_go_func=strategy_controller, temporal_variables = FRAMES_ABSOLUTE))
 	p2.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, key_handler)]        
 	p2.go()
 	
+	subject.inputData(trial, "cur_strat", strategy)
+	
 	#BLOCK 3 - BLANK SCREEN
 	p3 = Presentation(go_duration=(0.5, 'seconds'), viewports=[fixCross])
 	p3.go()
+	
+	trial = trial + 1
+	
+	subject.printData()
+	
+subject.preserve()
