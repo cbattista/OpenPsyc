@@ -39,13 +39,18 @@ memProblems = []
 
 for r in posts.find(q):
 	ns = [r['n1'], r['n2']]
+	trained = r['trained']
 
 	if r['orig_strat'] == 'calc':
-		calcProblems.append(ns)
+		calcProblems.append([ns, trained])
 	elif r['orig_strat'] == 'mem':
-		memProblems.append(ns)
+		memProblems.append([ns, trained])
 
 verProbs = calcProblems + memProblems
+
+#mix these guys up so it's not all trained and untrained in separate blocks
+random.shuffle(calcProblems)
+random.shuffle(memProblems)
 
 ##SET SCREEN
 screen = get_default_screen()
@@ -55,7 +60,6 @@ pygame.font.init()
 distractors = [2, -2]
 lOrR = ['l', 'r']
 strats = ['mem', 'calc']
-
 
 
 #strategy control, SRBox buttons
@@ -123,8 +127,12 @@ for dist, side, strategy in zip(dists, sides, strategies):
 
 	if strategy == "mem":
 		prob = memProblems.pop()
+		trained = prob[1]
+		prob = prob[0]
 	elif strategy == "calc":
 		prob = calcProblems.pop()
+		trained = prob[1]
+		prob = prob[0]
 
 	problem = "%s + %s = ?" % (prob[0], prob[1])
 	solution = str(prob[0] + prob[1])
@@ -136,6 +144,7 @@ for dist, side, strategy in zip(dists, sides, strategies):
 	subject.inputData(trial, "distractor", distractor)
 	subject.inputData(trial, "dist_side", side)
 	subject.inputData(trial, "dist_offset", dist)
+	subject.inputData(trial, "trained", trained)
 	
 	if side == "l":
 		correct = "left"
