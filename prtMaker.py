@@ -21,25 +21,34 @@ def StringToType(value):
 		val = value
 
 	return val
-	
+
 def strip(item):
 	item = item.strip()
 	item = item.strip("\"")
 	return item
 
 class PRTFile:
-	def __init__(self, theFile, settings = "", onset = 16000, offset=1950, checkErrors=False, eprime=True):
+	def __init__(self, theFile, settings = "", onset = 16000, offset=1950, checkErrors=False, source="eprime"):
 		self.settings = settings
 		self.onset = onset
 		self.offset = offset
 		self.checkErrors = checkErrors
-		if not eprime:
+		if source == "csv":
 			self.processCSV(theFile)
-		else:
+			self.makePRTDict()
+			self.setColors()
+			self.makePRT()
+			self.writePRT()
+
+		elif source == "spreadsheet":
 			self.processEPrime(theFile)
-		self.makePRTDict()
-		self.setColors()
-		self.makePRT()
+			self.makePRTDict()
+			self.setColors()
+			self.makePRT()
+			self.writePRT()
+
+		elif source == "database":
+			self.loadFromDB(theFile[0], theFile[1])
 
 	def processCSV(self, csv):
 		f = open(csv, 'r')
@@ -117,45 +126,109 @@ class PRTFile:
 					index[k] = hindex
 					VARs[k] = []
 					hindex = hindex + 1
-				
+
 				try:
 					VARs[k].append(StringToType(value))
 				except:
 					pass
-		
+
 			elif d == "*** LogFrame End ***":
 				first = False
 
 		self.VARs = VARs
 		self.fname = "%s_%s_%s.prt" % (info['Subject'], info['Experiment'], info['Session'])
 
+	def loadFromDB(self, dbName, table, s_id="Subject"):
+		import mongoTools
+		db = mongoTools.MongoAdmin(dbName)
+		p = db.getTable(table).posts
+
+		subjects = p.distinct(s_id)
+
+		keys = mongoTools.GetKeys(p)
+
+		for s in subjects:
+			VARs = {}
+
+			for k in keys:
+				VARs[k.replace('_', '.')] = []
+
+			count = 0
 			
+			result = p.find({s_id : s})
+
+			for r in result:			
+				for k in keys:
+					newKey = k.replace('_', '.')
+					if k in r.keys():
+						VARs[newKey].append(r[k])
+					else:
+						VARs[newKey].append('')
+			
+			#print VARs
+
+			self.VARs = VARs
+			self.fname = "%s.prt" % s
+
+			self.makePRTDict()
+			self.setColors()
+			self.makePRT()
+			self.writePRT()
+
+
 	def makePRTDict(self):
+		d={}
+		d["+"]="Addition"
+		d["-"]="Subtraction"
+		d["1"]="Correct"
+		d["2"]="Incorrect"
+		d[''] = ""
+		d["Arithmetic Verification Control"] = "AVC"
+		d["Arithmetic Verification"] = "AV"
 
 		VARs = self.VARs
-#		print VARs
+
 		prtDict = {}
-		count = 1
+		AVcount = 1
+		AVCcount = 1
 		if self.checkErrors:
 			prtDict['Error'] = []
-		for myCond, onset, jitter in zip(VARs['Condition'], VARs['SymbolPresentation.OnsetTime'], VARs['Jitter']):
-	
-			subtractor = self.onset
-	
+		for operation, cresp, onset, jitter, ACC, exp in zip(VARs['Operation'], VARs['Problem.CRESP'], VARs['Problem.OnsetTime'], VARs['Jitter'], VARs['Problem.ACC'], VARs['Experiment']):
+
 			if onset != "":
-				onset = onset - subtractor
-				offset = onset + self.offset
-				myCond = myCond
+
+				exp = d[exp]
+
+				if exp == "AV":
+
+					if AVcount == 1:
+						AVsub = onset - self.onset
+					onset = onset - AVsub
+					AVcount += 1
+
+				elif exp == "AVC":
+					if AVCcount == 1:
+						AVCsub = onset - self.onset				
+					onset = onset - AVCsub
+					AVCcount += 1
+
+				offset = onset + 2000
+				if (cresp == '') or ACC == 0:
+					myCond = '%s_Error' % exp
+				else:                
+					myCond = d[operation] + "_" + d[str(cresp)]
+
+				myCond = myCond.lstrip('_')
 
 				myString = "%s %s" % (onset, offset)
-		
+
 				if self.checkErrors:
 
 					if prtDict.has_key(myCond):
 						if int(ACC):
 							prtDict[myCond].append(myString)
 						else:
-							prtDict['Error'].append(myString)
+							prtDict['Error' % exp].append(myString)
 					else:
 						if int(ACC):
 							prtDict[myCond]= [myString]
@@ -168,10 +241,11 @@ class PRTFile:
 						prtDict[myCond].append(myString)
 					else:
 						prtDict[myCond]= [myString]
+						
 
 		self.prtDict = prtDict
 
-			
+
 	#generate a list of colours from the prtDict
 	def setColors(self):
 		if not os.path.exists("conditions.col"):
@@ -205,7 +279,7 @@ class PRTFile:
 				f = open("conditions.col", 'w')
 				pickle.dump(codeDict, f)
 				f.close()
-				
+
 		self.codeDict = codeDict
 
 	def writePRT(self):
@@ -242,8 +316,7 @@ class PRTFile:
 
 settings = """FileVersion:       1\n\nResolutionOfTime:   msec\n\nExperiment:         Child_SCE\n\nBackgroundColor:    0 0 0\nTextColor:          255 255 255\nTimeCourseColor:    255 255 255\nTimeCourseThick:    3\nReferenceFuncColor: 0 0 80\nReferenceFuncThick: 3\n\n"""
 
-theFiles = glob.glob("*.txt")
+#theFiles = glob.glob("*.txt")
 
-for files in theFiles:
-	prtFile = PRTFile(files, settings=settings, checkErrors=False)
-	prtFile.writePRT()
+prtFile = PRTFile(["Gavin", "AV"], source="database", settings=settings, checkErrors=False)
+
