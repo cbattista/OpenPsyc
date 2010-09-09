@@ -22,6 +22,18 @@ class MongoAdmin:
 	def getTable(self, table="test_table"):
 		return self.db[table]
 
+def GetKeys(p):
+	mr = Code("function() {for (var key in this) { emit(key, null);}}")
+	r = Code("function(key, stuff) { return null;}")
+
+	result = p.map_reduce(map=mr, reduce=r)
+
+	keys = result.distinct("_id")
+	
+	return keys
+
+
+
 def KeySafe(key):
 	key = key.replace(".", "_")
 	return key
