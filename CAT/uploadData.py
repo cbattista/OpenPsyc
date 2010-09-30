@@ -9,8 +9,8 @@ try:
 except:
 	sys.stderr("You need to specify a participant ID")
 
-fileName = "pre/070505_%s*.csv" % number
+fileName = "pre/pre_pro_%s_*.csv" % number
 dbName = "CAT2"
 tableName = "production_pre"
 
-reader = ReadTable(fileName = fileName, dbName=dbName, tableName = tableName, clear=True)
+reader = ReadTable(fileName = fileName, dbName=dbName, tableName = tableName, clear=False)

@@ -3,8 +3,11 @@
 import sys
 import os
 import glob
-import mongoTools
 import random
+
+sys.path.append('/home/cogdev/code/OpenPsyc/')
+
+import mongoTools
 
 try:
 	number = sys.argv[1]
@@ -54,6 +57,7 @@ for s in strategies:
 				probList.append(ns)
 	quit = 0
 	
+	
 	while not quit:
 		if len(probList) >= 20:
 			quit = 1
@@ -65,10 +69,9 @@ for s in strategies:
 				probList.append(ns)
 		else:
 			prob = "NA"
-			probList.append(ns)
+			probList.append(prob)
 
 	probList = probList[:20]
-	
 	#TRAINED PROBLEMS
 	for p in probList:
 		row = {}
