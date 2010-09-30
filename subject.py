@@ -5,13 +5,13 @@ import time
 import pickle
 
 class Subject:
-	def __init__(self, number="unknown", session="unknown", run="unknown"):		
+	def __init__(self, number="unknown", session="unknown", run="unknown", experiment="unknown"):		
 		self.number = number
 		self.session = session
 		self.run = run
 		self.date = time.localtime()
 		#create dictionary to hold trial results
-		self.fname = "%s_%s_%s_%s.csv" % (number, session, run, self.date)
+		self.fname = "%s_%s_%s_%s_%s.csv" % (experiment, number, session, run, self.date)
 		self.results = {}
 
 	def inputData(self, trial, condition, value):
@@ -38,11 +38,11 @@ class Subject:
 			trials.append(str(t))
 		f = open(self.fname, "w")
 		for t in trials:
-			line = t
+			line = "%s,%s" % (self.number, t)
 			trial = self.results[t]
 			trialKeys = trial.keys()
 			trialKeys.sort()
-			header = "trial"
+			header = "s_id,trial"
 			for tk in trialKeys:
 				header = "%s,%s" % (header, tk)
 				line = "%s,%s" % (line, trial[tk])
