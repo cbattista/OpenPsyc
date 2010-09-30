@@ -26,7 +26,7 @@ except:
 	sys.stderr("You need to specify a participant ID")
 
 
-subject = subject.Subject(1, "VER_PRE")
+subject = subject.Subject(number, "VER_PRE")
 
 db = MongoAdmin("CAT2")
 posts = db.getTable("ver_sets").posts
@@ -47,6 +47,9 @@ for r in posts.find(q):
 		memProblems.append([ns, trained])
 
 verProbs = calcProblems + memProblems
+
+print calcProblems
+print memProblems
 
 #mix these guys up so it's not all trained and untrained in separate blocks
 random.shuffle(calcProblems)
@@ -89,21 +92,28 @@ def key_handler(event):
 	global RT
 	key = event.key
 
+	print event.key
+
 	RT = p.time_sec_since_go
 	
-	if key == K_LALT:
+	if key == 308:
 		if correct == "left":
 			ACC = 1
 		else:
 			ACC = 0
 		p.parameters.go_duration=(0, 'frames')
-	elif key == K_RALT:
+	elif key == 313:
 		if correct == "right":
 			ACC = 1
 		else:
 			ACC = 0
 		p.parameters.go_duration=(0, 'frames')
 
+
+def pause_handler(event):
+	if event.key == K_SPACE:
+		print "BEGINNING EXPERIMENT"
+		pause.parameters.go_duration = (0, 'frames')
 
 dShuffler = shuffler.Shuffler(distractors, len(verProbs), 3)
 dists = dShuffler.shuffle()
@@ -114,15 +124,26 @@ sides = sideShuffler.shuffle()
 sShuffler = shuffler.Shuffler(strats, len(verProbs), 3)
 strategies = sShuffler.shuffle()
 
+
 #generate texts
 strat2 = "Please describe your strategy"
-stratText, stratPort = printWord(screen, strat2, 60, (255, 255, 255), h_anchor = 2.7)
+stratText, stratPort = printWord(screen, strat2, 60, (255, 255, 255), h_anchor = 1)
 	
 strategy = ""
 RT = 0
 ACC = 0
 
+fixText, fixCross = printWord(screen, '', 60, (255, 255, 255), h_anchor = 2.5)
+
+print "PRESS SPACE TO START"
+
+pause = Presentation(go_duration=('forever', ), viewports=[fixCross])
+pause.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, pause_handler)]  
+pause.go()
+
+
 trial = 1
+
 for dist, side, strategy in zip(dists, sides, strategies):
 
 	if strategy == "mem":
@@ -155,10 +176,10 @@ for dist, side, strategy in zip(dists, sides, strategies):
 		L = distractor
 		R = solution
 	
-	probText, probPort = printWord(screen, problem, 60, (255, 255, 255), h_anchor = 2.9)
-	lt, l = printWord(screen, L, 60, (255, 255, 255), h_anchor = 2.6)
-	rt, r = printWord(screen, R, 60, (255, 255, 255), h_anchor = 3.3)	
-	fixText, fixCross = printWord(screen, '', 60, (255, 255, 255), h_anchor = 2.5)
+	probText, probPort = printWord(screen, problem, 60, (255, 255, 255), h_anchor = 1.5)
+	lt, l = printWord(screen, L, 60, (255, 255, 255), h_anchor = 0.5)
+	rt, r = printWord(screen, R, 60, (255, 255, 255), h_anchor = 3)	
+	fixText, fixCross = printWord(screen, '', 60, (255, 255, 255), h_anchor = 1.5)
 
 	#BLOCK 1 - PROBLEM, BLANK & POSSIBLE SOLUTIONS
 	problem = Presentation(go_duration=(2, 'seconds'), viewports=[probPort])
