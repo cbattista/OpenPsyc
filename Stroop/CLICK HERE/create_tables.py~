@@ -1,0 +1,77 @@
+import dbAdmin
+from dbAdmin import dbAdmin
+import os, glob, pickle, copy
+import stroop_stats
+
+def createMemory(db):
+	sql = """
+		CREATE TABLE
+		memory_results
+		(mr_id integer primary key not null, subject integer,
+		sex varchar(20),
+		word text,
+		category varchar(20),
+		response real
+		);	
+		"""
+	db.query(sql)
+
+def createStroop(db):
+	sql = """
+		CREATE TABLE
+		stroop_results
+		(sr_id integer primary key not null, subject integer,
+		sex varchar(20),
+		word text,
+		trial integer,
+		category varchar(20),
+		colour varchar(20),
+		onset real,
+		response real,
+		rt real
+		);
+		"""
+	db.query(sql)
+
+def createNumbers(db):
+	sql = """
+		CREATE TABLE
+		number_results
+		(nr_id integer primary key not null, subject integer, 
+		sex varchar(20), 
+		word text,
+		trial integer,
+		colour varchar(20),
+		onset real,
+		response real,
+		rt real
+		);
+		"""
+	db.query(sql)
+
+def createColors(db):
+	sql = """
+		CREATE TABLE
+		color_results
+		(cr_id integer primary key not null, subject integer, 
+		sex varchar(20), 
+		word text,
+		trial integer,
+		colour varchar(20),
+		onset real,
+		response real,
+		rt real
+		);
+		"""
+	db.query(sql)
+
+
+db = dbAdmin("stroop_study_F07")
+
+#createMemory(db)
+createStroop(db)
+createNumbers(db)
+createColors(db)
+
+#stroop_stats.populateStroop(db)
+#stroop_stats.populateMemory(db)
