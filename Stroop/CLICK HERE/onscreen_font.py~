@@ -1,0 +1,200 @@
+#!/usr/bin/env python
+
+import sys, os, time, copy
+import bailey_shuffler
+import wx
+#import mem_GUI
+#from mem_GUI import *
+import experiments
+from experiments import printWord
+
+
+try:
+	import pygame
+	from pygame.locals import *
+	havePy = 1
+	
+except:
+	havePy = 0
+	
+try:
+	import VisionEgg
+	from VisionEgg.Core import *
+	from VisionEgg.FlowControl import Presentation, ConstantController
+	import VisionEgg.Daq
+	from VisionEgg.DaqKeyboard import *
+	from VisionEgg.Text import *
+	from VisionEgg.Textures import *
+	haveVE = 1
+
+except:
+	haveVE = 0
+
+try:
+	def showStimulus(screen, text, colour):
+		blankviewport = Viewport(screen=screen)	
+		print text
+		print colour
+		word, viewport = printWord(screen, text, 100, colour)
+		p = Presentation(go_duration=(0.5,'seconds'),viewports=[viewport])
+		p.go()
+
+		#insStim, insView = printText(screen, insText, 30, (255, 255,255))
+		#instructions = Presentation(go_duration=('forever',), viewports=[insView])
+	
+except:
+	pass
+
+
+class memFrame(wx.Frame):
+	def __init__(self, parent, id, title, wordList, answers):
+		wx.Frame.__init__(self, parent, id, title)
+		self.words = wordList
+		self.answers = answers
+		
+		self.sw = wx.ScrolledWindow(self)
+		
+		screenX = wx.SystemSettings.GetMetric(wx.SYS_SCREEN_X)
+		screenY = wx.SystemSettings.GetMetric(wx.SYS_SCREEN_Y)
+		
+		centreY = screenY / 24
+		
+		box = wx.BoxSizer(wx.HORIZONTAL)
+		
+		mainSizer = wx.FlexGridSizer(3, 1, 5, 5)
+		
+		#header = self.makeHeader()
+		
+		#self.mainSizer.Add(self.header, 1)
+		
+		wordSizer, wordSize = self.makeList()
+		
+		mainSizer.Add(wx.Panel(self.sw, -1, size=(screenX,centreY)))
+		
+		mainSizer.Add(wordSizer)
+		
+		self.okButton = wx.Button(self.sw, -1, 'Done', size=(wordSize[0], centreY))
+		
+		mainSizer.Add(self.okButton, wx.EXPAND)
+		
+		self.Bind(wx.EVT_BUTTON, self.onOK)
+		
+		self.sw.SetScrollbars(20,20,55,40)
+		
+		box.Add(mainSizer)
+
+		centreX = (screenX - wordSize[0]) / 2
+		
+		box.PrependSpacer((centreX, screenY))
+		
+		self.sw.SetSizer(box)
+		
+		self.SetSize((screenX, screenY))
+		
+		
+		
+	def makeHeader(self):
+		#make the header that will go outside of the scrolling window so the participant can always see the categories		
+		headSizer = wx.FlexGridSizer(1, len(self.answers)+1, 5, 5)
+		
+		headSizer.Add(wx.StaticText(self, -1, 'word'), 1)
+		
+		for a in self.answers:
+			headSizer.Add(wx.StaticText(self, -1, a[1]), 1)
+			
+		return headSizer
+
+	def makeList(self):
+		#make the list of words with radio buttons to go in the scroll window
+		wordSizer = wx.FlexGridSizer(len(self.words), len(self.answers)+1, 10, 10)
+
+		#Quiz will be a list of the button groups that make up a question - which is itself a list
+		#each question entry will contain a list containing the label and the radio button options
+		self.Quiz = []
+				
+		for word in self.words:
+			question = []
+			wordlabel = wx.StaticText(self.sw, -1, word)
+			wordSizer.Add(wordlabel, 1)
+			question.append(wordlabel)
+			for a in self.answers:
+				id = self.words.index(word) * len(self.answers) + a[0] - 1
+				button = wx.CheckBox(self.sw, id, a[1])
+				button.SetValue(0)
+				wordSizer.Add(button)
+				question.append(button)
+			self.Quiz.append(question)
+		self.Bind(wx.EVT_CHECKBOX, self.onCheck)		
+		return wordSizer, wordSizer.GetMinSize()
+	
+	def onCheck(self, event):	
+		index = event.GetId() / len(self.answers)
+		answer = event.GetId() - (index * len(self.answers))
+		question = self.Quiz[index]
+		for i in range(1, len(self.answers)+1):
+			if question[i].GetId() != event.GetId():
+			question[i].SetValue(0)
+
+	def onOK(self, event):
+		#answer list is a dictionary of words and responses
+		answerDict = {}
+		answerDict['word']='NULL'
+		answerDict['response']='NuLL'
+		
+		self.answerList = []
+		answeredRange = []
+		
+		for question in self.Quiz:
+			answered = 0
+			tempDict = copy.deepcopy(answerDict)
+			for i in range(1, len(question)):
+				if question[i].GetValue():
+					tempDict['word'] = question[0].GetLabel()
+					tempDict['response'] = i
+					answeredRange.append(self.Quiz.index(question))
+					self.answerList.append(tempDict)
+			
+		while answeredRange:	
+			i = answeredRange.pop()
+			myq = self.Quiz.pop(i)
+			for item in myq:
+				item.Destroy()
+				
+		self.sw.Layout()
+		print self.answerList
+					
+class memApp(wx.App):
+    def OnInit(self):
+		answers = experiments.loadAnswers('possibleAnswers.txt')
+		frame = memFrame(None, -1, 'Memory Test', memoryList, answers)
+		frame.Centre()
+		frame.Show(True)
+		return True
+
+def main():
+	havePy = 0
+	haveVE = 0
+	if havePy:
+		pygame.init()
+		screen = get_default_screen()
+		screen.parameters.bgcolor = (0.0,0.0,0.0,0.0)
+		pygame.display.set_caption("Welcome to the Experiment")
+
+	
+	myList, justWords = bailey_shuffler.makeStroopList()
+
+	for item in myList:
+		if haveVE:
+			showStimulus(screen, item[0][1], item[1])
+		else:
+			pass
+
+	#now we need to make a list of the words with some distractors
+	global memoryList 
+	memoryList = bailey_shuffler.makeDistractorList(justWords)
+	
+	#now we launch our wx App
+	memoryApp = memApp(0)
+	memoryApp.MainLoop()
+
+if __name__ == '__main__': main()

@@ -1,0 +1,98 @@
+#stroop_DB
+
+import dbAdmin
+from dbAdmin import dbAdmin
+import os, glob, pickle, copy
+
+db = dbAdmin("stroop_study_F07")
+
+def createStroop(db):
+	sql = """CREATE TABLE 
+			results 
+			(subject INT, 
+			sex INT, 
+			IV INT,
+			block TEXT,
+			word TEXT,
+			color TEXT,
+			onset REAL,
+		 	response REAL,
+			RT REAL,
+			correct INT)"""
+
+	db.query(sql)
+
+def populateStroop(db):
+	abuse, positive, neutral, Ns, fakeabuse, fakepositive, fakeneutral, fakeNs = generateWords()
+	globDir = os.path.join(os.getcwd(), "data", "P_*")	
+	subDirs = glob.glob(globDir)
+	for d in subDirs:
+	#d = subDirs[0]	
+		subFile = os.path.join(d, 'subInfo.pck')
+		s = open(subFile, 'r')
+		sub = pickle.load(s)
+		s.close()
+		stroopFile = os.path.join(d, str(sub.number) + "_stroop_data.pck")
+		f = open(stroopFile, 'r')
+		data = pickle.load(f)
+		f.close()
+		
+		if sub.sex == 1:
+			sex = 'female'
+		else:
+			sex = 'male'
+		
+		number = str(sub.number)
+		order = 1
+		last = 0
+		lastcat = ""		
+		acount = 0
+		pcount = 0
+		ncount = 0
+		for item in data:
+			word = item[0]
+			colour = item[1]
+			onset = item[2]
+			response = item[3]
+			rt = response - onset
+			category = classify(word, abuse, positive, neutral, Ns, fakeabuse, fakepositive, fakeneutral, fakeNs)
+			if category != None:
+				if category == 'f':
+					last = last + 1
+					category = lastcat + "_" + category + str(last)
+				else:
+					if category == "a":
+						acount = acount + 1
+						trial = acount					
+					elif category == "p":
+						pcount = pcount + 1
+						trial = pcount
+					elif category == "n":
+						ncount = ncount + 1
+						trial = ncount
+					last = 0
+					lastcat = category
+				sql = """
+					INSERT INTO
+					results
+					VALUES (NULL, %s, "%s", "%s", %s, "%s", "%s", %s, %s, %s);
+					""" % (number, sex, word, trial, category, colour, onset, response, rt)
+				print sql
+				db.query(sql)
+
+"""CREATE TABLE results (subject INT, 
+			sex INT, 
+			IV INT,
+			block TEXT,
+			word TEXT,
+			color TEXT,
+			onset REAL,
+		 	response REAL,
+			RT REAL,
+			correct INT)"""
+
+populateStroop(db)
+
+#createStroop(db)
+
+

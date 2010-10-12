@@ -1,0 +1,60 @@
+#usr/bin/env/python
+
+#here is the standard subject info GUI you use at the start of most experiments
+#we ask for the subject #, the session #, the subject's sex and their handedness
+
+import os, pickle
+
+#the Subject Class - for storing individual subject study results
+#takes subject # as int, sex and handedness as bools
+
+#usr/bin/env/python
+
+#here is the standard subject info GUI you use at the start of most experiments
+#we ask for the subject #, the session #, the subject's sex and their handedness
+
+import os, pickle, random, glob, copy
+
+#the Subject Class - for storing individual subject study results
+#takes subject # as int, sex and handedness as bools and whatever other experiment-depending data goes in a list 
+#initialize like this - mySubject = Subject(1, 1, 1, trialData)
+#methods are mySubject.saveData() which outputs a data file Subject 1.txt and Subject 1.pck
+#and mySubject.loadInfo() which loads the subjectInfo from the subInfo GUI
+class SubLoader():
+	def __init__(self):
+		self.path = "settings/subInfo.pck"
+		
+	def load(self):
+		f = open(self.path)
+		sub = pickle.load(f)
+		f.close()
+		return sub
+
+class Subject:
+	#initialize current subject, taking sub info from the picked subkectInfo file generated
+	#by subjectInfoGUI
+	#IMPORTANT - must run GUI before creating instance of Subject class for this to work
+	def __init__ (self, number=0, sex=1, hand=1):
+		self.number = number
+		self.name = str(number)
+		self.sex = sex
+		self.hand = hand
+
+	def save(self):
+		path = os.path.join("data", "P_"+str(self.number))
+		spath = os.path.join("settings", "subInfo.pck")		
+		self.path = path
+
+		f = open(spath, "w")
+		pickle.dump(self, f)
+		f.close()
+
+		if os.path.exists(path):
+			pass
+		else:
+			os.mkdir(path)
+		f = open(os.path.join(path, "subInfo.pck"), "w")
+		pickle.dump(self, f)
+		f.close()
+
+
