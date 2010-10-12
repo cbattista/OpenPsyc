@@ -1,0 +1,48 @@
+###############################################################################
+
+1. Digits: 
+
+40 pairs, 
+20 ranging from 1-9 and 
+20 ranging from 10 upwards. 
+
+Ratios should roughly the same in the two ranges. 
+
+***
+
+There is one important constraint with the double digits. 
+Here we need pairs where the unit and decade digit are compatible (would lead to the same response).
+
+52 vs. 67 would be a compatible trials as 5 is smaller than 6 and 2 is smaller than 7. 
+47 vs. 62 would be an example of an incompatible trial since 4 is smaller than 6 but 7 is larger than 2. 
+
+To avoid this 'unit-decade incompatibility effect' confounding the results for the ratio effect, it would be great if all the 40 trials coudl be of the compatible kind. 
+***
+
+No problem, add a flag that says "incompatible" or "compatible", place in appropriate directory
+
+###############################################################################
+
+2. Dots : here we just need to match them up with the digit stimuli. Since the digit stimuli have the constraint of the unit-decade compatibility requirement, it probably makes sense to choose those trials first and then select the same for the dot stimuli.
+
+So for each task we will have 80 stimuli, 40 in the single digit 40 in the double digit range. 
+Within each range 20 of the stimuli have the larger number on the right and 20 have the larger number on the left.
+
+No problem, also add a flag for "left larger" and "right larger", and place in an appropriate directory
+
+################################################################################
+
+Here are the dimensions for the display:
+
+Width:                                960 pixels
+
+Heigth:                               720 pixels
+
+Horizontal resolution:        96 dpi
+
+Verticale resolution:         96 dpi
+
+################################################################################
+
+(SYM, NONSYM)__SMALL/LARGE_LEFTNUMBER_RIGHTNUMBER_RATIO
+
