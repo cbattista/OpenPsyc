@@ -63,7 +63,7 @@ def makeSymStimulus(name, n1, size, bgcolor, color,  n2=[], dpi = (96,96)):
     image.save("%s_SYM.bmp" % name, "BMP", dpi=dpi)
    
 class DotMaster:
-	def __init__(box, area, density=5, separation=150):
+	def __init__(self, box, area, density=5, separation=150):
 		self.box = box
 		self.area = area
 		self.density = density
@@ -82,13 +82,15 @@ class DotMaster:
 		#5 - repeat until only 1 dot is left
 		#6 - make the last dot the necessary size so the area works out
 
-		avg = self.area / n
+		print self.dotArea, n
+		avg = self.dotArea / n
 		operations = [-1, 1]
 		myAreas = []
 		for i in range(n-1):
-		    num = random.uniform(MIN, MAX)
-		    operation = random.choice(operations)
-		    myAreas.append(avg + (operation * num * avg))
+			print MIN, MAX
+			num = random.uniform(MIN, MAX)
+			operation = random.choice(operations)
+			myAreas.append(avg + (operation * num * avg))
 		    
 		total = sum(myAreas)
 		diff = abs(area - total + avg)
@@ -103,7 +105,7 @@ class DotMaster:
 		goodList = 0
 		breaks = 0
 
-		areaList = dotSolver(dotArea, n)
+		areaList = self.dotSolver(n)
 
 		if n != 1:
 
@@ -120,7 +122,7 @@ class DotMaster:
 
 		            #if we've broken the cycle more than 10 times, we should regenerate the area list, 'cause this obviously ain't workin'
 		            if breaks > 9:
-		                areaList = dotSolver(dotArea, n1)
+		                areaList = dotSolver(n)
 		                #print "regenning area list"
 		                breaks = 0
 		                dotBoxes = []
@@ -183,25 +185,37 @@ class DotMaster:
 		    x = int(random.uniform(r + self.density, self.bounds[0] - r - self.density))
 		    y = int(random.uniform(r + self.density, self.bounds[1] - r - self.density))
 		    dotBoxes = [(x, y, r, a)]
-        
-    
-    return dotBoxes
+    	
+		return dotBoxes
 
 
 	def MultiArranger(self, ns):
 		dotAreas = []
 		areaList = []
 		for n in ns:
-			areas = dotSolver(dotArea, n)
+			areas = self.dotSolver(n)
 			dotAreas.append(areas)
 			areaList += areas
 
-		dotboxes = dotArranger(areaList)
+		dotboxes = self.dotArranger(areaList)
+
+		newBoxes = []
 
 		for d in dotBoxes:
 			a = d[3]
-			for area in areas:
-				if 
+			exit = False
+			count = 0
+			while not exit:			
+				i = count % len(areas)
+				if a in areas[i]:
+					index = areas.index(a)
+					newD = d + [i]
+					newBoxes.append(newD)
+					areas.pop(index)
+					exit = True
+				count+=1
+
+		return newBoxes
 
 	def drawSingle(self, dotBoxes):
 		pass
@@ -212,6 +226,16 @@ class DotMaster:
 	def drawOverlay(self, dotBoxes):
 		pass
 
+bgcolor = (132, 130, 132)
+colors = [(255, 255, 16), (0, 4, 214)]
+box = (480, 720) #region of screen occupied by dots
+#areas = [0.05, 0.1, 0.15, 0.2, 0.25] #area of box taken up by dots
+area = 0.05
 
+ns = [5, 8]
 
+dotMaster = DotMaster(box, area)
 
+newBoxes = dotMaster.MultiArranger(ns)
+
+print newBoxes
