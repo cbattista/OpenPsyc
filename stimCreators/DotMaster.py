@@ -84,7 +84,7 @@ class DotMaster:
 		#5 - repeat until only 1 dot is left
 		#6 - make the last dot the necessary size so the area works out
 
-		avg = self.dotArea / n
+		avg = self.dotArea / float(n)
 		operations = [-1, 1]
 		myAreas = []
 		for i in range(n-1):
@@ -93,20 +93,28 @@ class DotMaster:
 			myAreas.append(avg + (operation * num * avg))
 
 		total = sum(myAreas)
-		diff = abs(area - total + avg)
-		myAreas.append(avg + diff)
-		return myAreas
+		diff = self.dotArea - total
+		if diff > 0 and diff >= (avg*MIN) and diff <= (avg*MAX):
+			myAreas.append(diff)
+			print "area: %s" % sum(myAreas)
+			return myAreas
+		else:
+			return []
 
 	def generateLists(self, ns):
 		#generates the area lists, depending on the ns parameters
+		print "##generating lists"
 		areaList = []
 		sepDots = []
 		if type(ns) == int:
-			areaList = self.dotSolver(n)
+			while not areaList:
+				areaList = self.dotSolver(n)
 
 		elif type(ns) == list:
 			for n in ns:
-				areas = self.dotSolver(n)
+				areas = []
+				while not areas:
+					areas = self.dotSolver(n)
 				sepDots.append(areas)
 				areaList += areas
 
@@ -206,8 +214,6 @@ class DotMaster:
 		#now, if we have multiple ns we are trying to use for an overlay, let's do that...
 		if type(ns) == list and len(ns) > 1:
 			newBoxes = []
-			print sepDots
-			print dotBoxes
 	
 			for d in dotBoxes:
 				a = d[3]
@@ -245,12 +251,12 @@ class DotMaster:
 		
 
 bgcolor = (132, 130, 132)
-colors = [(255, 255, 16), (0, 4, 214)]
+colors = [(255, 255, 16), (0, 4, 214), (200, 5, 0), (5, 200, 5)]
 box = (480, 720) #region of screen occupied by dots
 #areas = [0.05, 0.1, 0.15, 0.2, 0.25] #area of box taken up by dots
 area = 0.05
 
-nss = [[5, 8], [3,9], [10, 20], [2, 3]]
+nss = [[5, 8, 2, 3], [3,9, 5, 2], [2, 3, 6, 8]]
 
 dotMaster = DotMaster(box, area, colors = colors, bgcolor = bgcolor)
 
