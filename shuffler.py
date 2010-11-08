@@ -208,9 +208,7 @@ class MultiShuffler:
 					if i < j:
 						pass
 					else:
-						print count
 						badshuffle = 1
-						print "bad shuffle"
 
 				count = count + 1
 
@@ -251,7 +249,7 @@ class Shuffler:
 				self.repeats = repeats		
 		
 				
-	def shuffleIt(self):
+	def shuffle(self):
 		
 		if not self.ratio:
 			listgood = 0
