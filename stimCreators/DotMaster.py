@@ -66,14 +66,22 @@ class DotMaster:
 	def __init__(self, box, area, density=5, separation=10, colors =[[255, 255, 255]], bgcolor = [0,0,0]):
 		self.box = box
 		self.area = area
+		if type(area) != list:
+			self.sizectrl = "SC"
+			self.dotArea = box[0] * box[1] * area
+		else:
+			self.sizectrl = "NSC"
+			self.dotArea = []
+			for a in area:
+				self.dotArea.append(box[0] * box[1] * a)
 		self.density = density
 		self.separation = separation
-		self.dotArea = box[0] * box[1] * area
+		
 		self.colors = colors
 		self.bgcolor = bgcolor
 
 
-	def dotSolver(self, n, MIN=.25, MAX=.75):
+	def dotSolver(self, n, area, MIN=.25, MAX=.75):
 		#input - area, number of dots
 		#output - radius of each dot
 		#solver algo
@@ -84,7 +92,7 @@ class DotMaster:
 		#5 - repeat until only 1 dot is left
 		#6 - make the last dot the necessary size so the area works out
 
-		avg = self.dotArea / float(n)
+		avg = area / float(n)
 		operations = [-1, 1]
 		myAreas = []
 		for i in range(n-1):
@@ -93,7 +101,7 @@ class DotMaster:
 			myAreas.append(avg + (operation * num * avg))
 
 		total = sum(myAreas)
-		diff = self.dotArea - total
+		diff = area - total
 		if diff > 0 and diff >= (avg*MIN) and diff <= (avg*MAX):
 			myAreas.append(diff)
 			print "area: %s" % sum(myAreas)
@@ -108,16 +116,25 @@ class DotMaster:
 		sepDots = []
 		if type(ns) == int:
 			while not areaList:
-				areaList = self.dotSolver(n)
+			
+				areaList = self.dotSolver(n, self.dotArea)
 
-		elif type(ns) == list:
+		elif type(ns) == list and self.sizectrl == "SC":
 			for n in ns:
 				areas = []
 				while not areas:
-					areas = self.dotSolver(n)
+					areas = self.dotSolver(n, self.dotArea)
 				sepDots.append(areas)
 				areaList += areas
-
+				
+		elif type(ns) == list and self.sizectrl == "NSC":
+			for n, area in zip(ns, self.dotArea):
+				areas = []
+				while not areas:
+					areas = self.dotSolver(n, area)
+				sepDots.append(areas)
+				areaList += areas
+		
 		else:
 			print "Just what the hell do you think you're doing"
 
@@ -249,7 +266,7 @@ class DotMaster:
 					
 			del draw
 				
-			image.save("%s_S%s_NS.bmp" % (name, count), "BMP", dpi=dpi)
+			image.save("%s_S%s_%s.bmp" % (name, count, self.sizectrl), "BMP", dpi=dpi)
 				
 			count+=1
 
@@ -266,5 +283,5 @@ class DotMaster:
 
 		del draw
 
-		image.save("%s_OL_NS.bmp" % name, "BMP", dpi=dpi)
+		image.save("%s_OL_%s.bmp" % (name, self.sizectrl), "BMP", dpi=dpi)
 		
