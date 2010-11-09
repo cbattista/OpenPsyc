@@ -228,11 +228,30 @@ class DotMaster:
 		else:		
 			self.dotBoxes = dotBoxes
 
-	def drawSingle(self, dotBoxes):
-		pass
+	def drawSingle(self, name, dpi=96):
+		#obtain all the possible colors
+		cols = []
+		for d in self.dotBoxes:
+			cols.append(d[4])
+			
+		cols = set(cols)
+		cols = list(cols)
 
-	def drawDouble(self, dotBoxes1, dotBoxes2):
-		pass
+		count = 1
+		for c in cols:
+			image = Image.new("RGB", self.box, self.bgcolor)
+					
+			draw = ImageDraw.Draw(image)
+			for d in self.dotBoxes:
+				if d[4] == c:
+					box1 = [d[0] - d[2], d[1] - d[2], d[0] + d[2], d[1] + d[2]]
+					draw.ellipse(box1, fill = self.colors[d[4]])
+					
+			del draw
+				
+			image.save("%s_S%s_NS.bmp" % (name, count), "BMP", dpi=dpi)
+				
+			count+=1
 
 	def drawOverlay(self, name, dpi=96):
 		#make a left/right dot array stimulus from two groups of bounding boxes
@@ -249,19 +268,3 @@ class DotMaster:
 
 		image.save("%s_OL_NS.bmp" % name, "BMP", dpi=dpi)
 		
-
-bgcolor = (132, 130, 132)
-colors = [(255, 255, 16), (0, 4, 214), (200, 5, 0), (5, 200, 5)]
-box = (480, 720) #region of screen occupied by dots
-#areas = [0.05, 0.1, 0.15, 0.2, 0.25] #area of box taken up by dots
-area = 0.05
-
-nss = [[5, 8, 2, 3], [3,9, 5, 2], [2, 3, 6, 8]]
-
-dotMaster = DotMaster(box, area, colors = colors, bgcolor = bgcolor)
-
-for ns in nss:
-	dotMaster.dotArranger(ns)
-
-	dotMaster.drawOverlay(str(ns))
-
