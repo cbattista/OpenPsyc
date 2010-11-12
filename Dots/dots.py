@@ -3,8 +3,13 @@
 import sys
 import os
 import pickle
+import time
 from VisionEgg.Textures import *
 from VisionEgg.Core import *
+from VisionEgg.FlowControl import TIME_INDEPENDENT
+from numpy.random import normal
+from numpy import zeros
+from numpy import array
 
 sys.path.append("c:\code\OpenPsyc")
 
@@ -52,7 +57,8 @@ screen = get_default_screen()
 pygame.init()
 
 trial = 1
-
+	
+	
 def keyFunc(event):
 	global color
 	global cDict
@@ -81,6 +87,7 @@ def keyFunc(event):
 		else:
 			sub.inputData(trial, "ACC", 0)
 
+			
 for block in blockOrder:
 	
 	ratios = shuffler.Condition([.3, .4, .5, .6, .7, .8], "ratio", 6)
@@ -139,6 +146,12 @@ for block in blockOrder:
 			p = Presentation(go_duration = (0.5, 'seconds'), viewports=[v])
 			p.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, keyFunc)]
 			p.go()
+			
+			mt = Texture(Image.open(os.path.join(stimLib, "noise", "1.BMP"))
+			ms = TextureStimulus(texture = t, position = (x, y), anchor = 'center')
+			mv = Viewport(screen=screen, stimuli=[ms])
+			mask = Presentation(go_duration = (0.5, 'seconds'), viewports=[v])
+			mask.go()
 		
 		else:
 			if order == "large":
@@ -168,6 +181,12 @@ for block in blockOrder:
 				p.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, keyFunc)]
 				p1.go()
 				p.go()
+
+				mt1 = Texture(Image.open(os.path.join(stimLib, "noise", "1.BMP"))
+				ms = TextureStimulus(texture = t, position = (x, y), anchor = 'center')
+				mv = Viewport(screen=screen, stimuli=[s])
+				mask = Presentation(go_duration = (0.5, 'seconds'), viewports=[v])
+				mask.go()
 				
 			else:
 				x = screen.size[0] / 4
@@ -180,6 +199,15 @@ for block in blockOrder:
 				p = Presentation(go_duration=(0.5, 'seconds'), viewports=[v])
 				p.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, keyFunc)]
 				p.go()
-				
+
+				mt1 = Texture(Image.open(os.path.join(stimLib, "noise", "1.BMP"))
+				mt2 = Texture(Image.open(os.path.join(stimLib, "noise", "2.BMP"))
+				ms1 = TextureStimulus(texture = mt1, position = (x, y), anchor = 'center')
+				ms2 = TextureStimulus(texture = mt2, position = (x, y), anchor = 'center')
+				mv = Viewport(screen=screen, stimuli=[ms1, ms2])
+				mask = Presentation(go_duration = (0.5, 'seconds'), viewports=[v])
+				mask.go()
+						
 		trial += 1
 		sub.printData()
+		
