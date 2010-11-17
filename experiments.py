@@ -101,12 +101,9 @@ def printText (screen, theText, fontSize, theColor, h_anchor = 1, v_anchor = 1):
 #this function blits some parsed text on the screen
 #it takes the screen to blit to as an argument and also the file which holds the text
 #since it just shows text and then quits once SPACEBAR is pressed, it is good for showing experiment instructions, hence the name
-def showInstructions(screen,  textfile, textSize=30, textcolor=(0, 0, 0)):
+def showInstructions(screen,  text, textSize=30, textcolor=(0, 0, 0)):
 	#create our instruction screen
-	#load up the instruction text
-	f = open(textfile, 'r')
-	insText = f.readlines()
-	f.close()
+	insText = text.split('\n')
 
 	if len(insText) > 1:
 		insStim, insView = printText(screen, insText, textSize, textcolor)
