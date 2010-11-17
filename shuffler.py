@@ -84,24 +84,19 @@ class StimulusMacro:
 		self.returnString = self.returnString + s1 + "\"" + s2 +")\n"
 
 		#open and write the stimClass
-		f = open("stimClass.py", 'w')
-		f.write("class Stimulus:\n")
-		f.write(self.slotString)
+		output = "class Stimulus:\n" + self.slotString
+		
 		for c in self.conditions:
-			f.write("\t\tself.%s = %s\n" % (c.name, c.name))
-		f.write("\t\tself.number = number")
-		f.write("\n")
-		f.write("\n")
-		f.write("\tdef __str__(self):\n")
-		f.write(self.returnString)
-		f.write("\t\treturn string\n")
-		f.write("\n")
-		f.write("\tdef __eq__(self, other):\n")
-		f.write("\t\tl=[]\n")
-		f.write(self.eqString)
-		f.write("\t\treturn l")
-		f.close()
-
+			output += "\t\tself.%s = %s\n" % (c.name, c.name)
+		
+		output += "\t\tself.number = number\n\n\tdef __str__(self):\n"
+		output += self.returnString
+		output += "\t\treturn string\n\n\tdef __eq__(self, other):\n\t\tl=[]\n"
+		output += self.eqString
+		output += "\t\treturn l"
+			
+		return output
+		
 	"""
 	Write the Function that will create a list of Stimulus Objects for shuffling
 
@@ -134,18 +129,14 @@ class StimulusMacro:
 		forString = forString + tabStop + ("\tstimList.append(Stimulus(%s))\n" % listString)
 		
 		#write it out
-		f = open("listMaker.py", "w")
 	
-		f.write("def listMaker(s):\n")
+		output = "def listMaker(s):\n"
+		output += "\tStimulus = s\n"
+		output += forString	
+		output += "\treturn stimList"
 	
-		f.write("\tStimulus = s\n")
-
-		f.write(forString)
-	
-		f.write("\treturn stimList")
-	
-		f.close()
-
+		return output
+		
 """
 MultiShuffler Class.  Used to shuffle a list according to multiple conditions and random rules.  
 Args are your list of conditions and how many trials you want to create.  
@@ -170,18 +161,17 @@ class MultiShuffler:
 
 		#create stimulus macro
 		sm = StimulusMacro(self.conditions)
+		
 		#write stimClass.py with stimulus objects
-		sm.createObject()
-		sm.writeListFunction(x)
-		#import the stimulus object
-		from stimClass import Stimulus
-		#create list of stimuli
-		from listMaker import listMaker
+		exec(sm.createObject())		
+		exec(sm.writeListFunction(x))
+
 		self.stimList = listMaker(Stimulus)
 		
 		
 	#Okay so the idea was to go through the list of stimuli and look at them with the 
 	def shuffle(self):
+		
 		count = 0
 		while count < self.trials:
 			random.shuffle(self.stimList)
@@ -247,10 +237,9 @@ class Shuffler:
 					self.repeats = allowableRepeats
 			else:
 				self.repeats = repeats		
-		
-				
+						
 	def shuffle(self):
-		
+				
 		if not self.ratio:
 			listgood = 0
 			while listgood != 1:
@@ -337,134 +326,3 @@ class Shuffler:
 				else:
 					pass
 			
-			
-	
-
-	#shuffle a list with some parameters
-	#use this function when you have 2 lists to shuffle, for instance x =  [0,1] and y = [1,2,3,4,5] where each item 
-	#of y should be assigned each item of x once
-	#first you would use shuffleIt to make a long list of 'parameters', that is, enough x items to fill up the desired
-	#number of trials.  then use shuffleIt2 to assign items in y to the parameter list
-	#returns list of [item y, item x], one for each trial
-	def shuffleIt2(self, params):
-		i = 1
-		itemList = []
-		myList = []
-
-		while i <= self.instances:
-			for item in self.items:
-				myList.append(item)
-			random.shuffle(myList)
-			itemList.append(myList)
-			myList = []
-			i = i + 1
-
-		for par in params:
-			self.itemList.append([itemList[par][0], par])
-			itemList[par].pop(0)
-				
-
-		return self.itemList
-
-			
-	def shuffleItwithParams(self, params):
-		#now we have some parameters - params holds whether we are going to use same faces or diff faces
-		#let's make a separate list that we can shuffle - we need 4 instances of each face to spread the 19
-		#over 84 trials
-		trialCounter = 1
-		matchList = []
-		nomatchList = []
-		while trialCounter <= self.trials:
-			#print trialCounter
-			#make sure our lists are non-empty
-			if matchList == [] and nomatchList == []:
-				matchList = self.items[6:13]
-				random.shuffle(matchList)
-				nomatchList = self.items[0:6]
-				random.shuffle(nomatchList)
-			elif matchList == []:
-				matchList = self.items[6:13]
-				random.shuffle(matchList)
-			elif nomatchList == []:
-				nomatchList = self.items[0:6]
-				random.shuffle(nomatchList)
-			#if this is a matching pair add first item from shuffled list and remove
-			if params[trialCounter-1] == 1:
-				self.itemList.append(matchList[0])
-				matchList.pop(0)
-				trialCounter = trialCounter + 1
-			#otherwise do the same with the nomatch list
-			else:
-				self.itemList.append(nomatchList[0])
-				nomatchList.pop(0)
-				trialCounter = trialCounter + 1
-		return self.itemList
-
-	def shuffleItwithinTrials(self, lastItems):
-		#now we've got to add the angles to each pair
-		#for each pair (e.g. 1,2 or 19,19 or whatever), each item in angles must be represented once
-		#we can make 12 distinct random angle lists (1 for each pair) and then add them 
-		#as we step through the face pair list
-		#let's make the 12 shuffled angle lists
-		trialCounter = 1
-		while trialCounter < self.trials:
-			myList = []
-			blocks = 1
-			while blocks <= 12:
-				weeList = self.items[:]
-				random.shuffle(weeList)
-				#before we can be sure the shuffled list is OK, we must make sure no angles are repeated next
-				#to each other
-				if blocks < 2:
-					myList.append(weeList)
-					blocks = blocks + 1
-				else:
-					if myList[blocks-2][-1] == weeList[0]:
-						pass
-					else:
-						myList.append(weeList)
-						blocks = blocks + 1
-			#now we have to add all the angles
-			#we musn't repeat two angles in a row, so let's store the previous x value
-			#initialize to an angle we're not using, in this case 1
-			newList = myList[:]
-			lastx = 1
-			#print myList
-			#print newList
-			for items in lastItems:
-				myIndex = faces.index(items)
-				x = newList[myIndex][0]
-				#for the first entry we don't need to check anything
-				if len(self.itemList) < 2:
-					self.itemList.append([items[0], items[1], x])
-					newList[myIndex].pop(0)
-					lastx = x
-					trialCounter = trialCounter + 1
-				#for the rest
-				else:
-					#check if the last angle we put in is the same as the current one
-					#by this method we can run into problems if there is a single item list
-					#with a wrong value - there won't be [1] to put in
-					#so if that happens we have to restart the loop and try again
-					if x == lastx and len(newList[myIndex]) > 1:
-						#it is the same we will put in the next angle in the list instead
-						x = newList[myIndex][1]
-						self.itemList.append([items[0], items[1], x])
-						newList[myIndex].pop(1)
-						lastx = x
-						trialCounter = trialCounter + 1
-					elif x == lastx and len(newList[myIndex]) == 1:
-						self.itemList = []
-						trialCounter = 1
-						break
-					else:
-						#otherwise continue as usual
-						self.itemList.append([items[0], items[1], x])
-						newList[myIndex].pop(0)
-						lastx = x
-						trialCounter = trialCounter + 1
-		return self.itemList
-		
-
-			
-
