@@ -13,6 +13,14 @@ def circleRadius(size, sizemeasure):
 		return (size / math.pi) ** 0.5
 	elif sizemeasure == 'perimeter':
 		return size / (math.pi * 2) 
+
+def fromRadius(r, measure):
+	if measure == 'area':
+		return math.pi * r **2
+	elif measure == 'perimeter':
+		return 2 * math.pi * r
+	else:
+		return None
 		
 #make a left/right dot array stimulus from two groups of bounding boxes
 def makeStimulus(name, dots1, size, bgcolor, color, dots2=[], dpi=(96, 96)):
@@ -66,7 +74,7 @@ def makeSymStimulus(name, n1, size, bgcolor, color,  n2=[], dpi = (96,96)):
 	image.save("%s_SYM.bmp" % name, "BMP", dpi=dpi)
    
 class DotMaster:
-	def __init__(self, box, dotsize, sizemeasure='area', density=5, separation=10, colors =[[255, 255, 255]], bgcolor = [0,0,0]):
+	def __init__(self, box, dotsize, sizemeasure='area', sizectrl = 'SC', density=5, separation=10, colors =[[255, 255, 255]], bgcolor = [0,0,0]):
 		self.box = box
 		if type(dotsize) != list:
 			self.sizectrl = "SC"
@@ -90,8 +98,11 @@ class DotMaster:
 		self.colors = colors
 		self.bgcolor = bgcolor
 
+		self.controlValue = False
 
-	def dotSolver(self, n, size, MIN=.25, MAX=.75):
+
+	def dotSolver(self, n, size, MIN=.3, MAX=.7, control = ''):
+
 		#input - size, number of dots
 		#output - radius of each dot
 		#solver algo
@@ -114,26 +125,51 @@ class DotMaster:
 		diff = size - total
 		if diff > 0 and diff >= (avg*MIN) and diff <= (avg*MAX):
 			mySizes.append(diff)
-			print "%s: %s" % (self.sizemeasure, sum(mySizes))
-			return mySizes
 		else:
-			return []
+			mySizes = []
+		
+		controlSizes = []
+		print control
+		if control:
+			for size in mySizes:
+				r = circleRadius(size, self.sizemeasure)
+				cs = fromRadius(r, control)
+				controlSizes.append(int(cs))
 
-	def generateLists(self, ns):
+
+		if mySizes and control:
+			if self.controlValue == False:	
+				controlSizes = []
+				for i in range(20):				
+					controlSize, mySizes = self.dotSolver(n, size)
+					controlSizes.append(controlSize)
+				self.controlValue = sum(controlSizes) / 20
+				return []
+			else:
+				if abs(sum(controlSizes) - self.controlValue) <= 10:
+					return mySize, sum(controlSizes)
+				else:
+					return []
+		elif mySizes:
+			return mySizes, sum(controlSizes)
+
+
+	def generateLists(self, ns, control=''):
+		control = 'perimeter'
 		#generates the area lists, depending on the ns parameters
-		print "##generating lists"
+		#print "##generating lists"
 		sizeList = []
 		sepDots = []
 		if type(ns) == int:
 			while not sizeList:
 			
-				sizeList = self.dotSolver(n, self.dotSize)
+				sizeList = self.dotSolver(n, self.dotSize, control=control)
 
 		elif type(ns) == list and self.sizectrl == "SC":
 			for n in ns:
 				areas = []
 				while not areas:
-					areas = self.dotSolver(n, self.dotSize)
+					areas = self.dotSolver(n, self.dotSize, control=control)
 				sepDots.append(areas)
 				sizeList += areas
 				
@@ -141,7 +177,7 @@ class DotMaster:
 			for n, area in zip(ns, self.dotSize):
 				areas = []
 				while not areas:
-					areas = self.dotSolver(n, area)
+					areas = self.dotSolver(n, area, control=control)
 				sepDots.append(areas)
 				sizeList += areas
 		
