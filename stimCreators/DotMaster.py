@@ -74,15 +74,19 @@ def makeSymStimulus(name, n1, size, bgcolor, color,  n2=[], dpi = (96,96)):
 	image.save("%s_SYM.bmp" % name, "BMP", dpi=dpi)
    
 class DotMaster:
-	def __init__(self, box, dotsize, sizemeasure='area', sizectrl = 'SC', density=5, separation=10, colors =[[255, 255, 255]], bgcolor = [0,0,0]):
+	def __init__(self, box, dotsize, sizemeasure='area', sizectrl = 'SC', density=5, separation=10, colors =[[255, 255, 255]], bgcolor = [0,0,0], control=''):
 		self.box = box
+
+		#if one item size provided
 		if type(dotsize) != list:
+			#control the sizes of both groups of items
 			self.sizectrl = "SC"
 			if sizemeasure == 'area':
 				self.dotSize = box[0] * box[1] * dotsize
 			elif sizemeasure == 'perimeter':
 				self.dotSize = (box[0] + box[1]) * dotsize
 		else:
+			#otherwise don't size control
 			self.sizectrl = "NSC"
 			self.dotSize = []
 			for d in dotsize:
@@ -97,9 +101,8 @@ class DotMaster:
 		
 		self.colors = colors
 		self.bgcolor = bgcolor
-
+		self.control = control
 		self.controlValue = False
-
 
 	def dotSolver(self, n, size, MIN=.3, MAX=.7, control = ''):
 
@@ -116,57 +119,78 @@ class DotMaster:
 		avg = size / float(n)
 		operations = [-1, 1]
 		mySizes = []
+		
+		#make a guess on the average sizes of the n-1 of the items
 		for i in range(n-1):
 			num = random.uniform(MIN, MAX)
 			operation = random.choice(operations)
 			mySizes.append(avg + (operation * num * avg))
 
+		#determine the appropriate size of the nth item
 		total = sum(mySizes)
 		diff = size - total
+		
 		if diff > 0 and diff >= (avg*MIN) and diff <= (avg*MAX):
 			mySizes.append(diff)
 		else:
 			mySizes = []
+			while not mySizes:
+				mySizes = self.dotSolver(n, size)
+			mySizes = mySizes[0]
 		
-		controlSizes = []
-		print control
-		if control:
-			for size in mySizes:
-				r = circleRadius(size, self.sizemeasure)
+		
+		#optional step, control for another size dimension
+		controlSizes = []		
+				
+		#determine the size of the controlled dimension
+		for ms in mySizes:
+			r = circleRadius(ms, self.sizemeasure)
+			if control:
 				cs = fromRadius(r, control)
-				controlSizes.append(int(cs))
+			else:
+				if self.sizemeasure == 'area':
+					cs = fromRadius(r, 'perimeter')
+				else:
+					cs = fromRadius(r, 'area')
+			controlSizes.append(int(cs))
 
-
+		#if we have a list of items and we want to control a dimension
 		if mySizes and control:
+			#control value has not been set
 			if self.controlValue == False:	
 				controlSizes = []
-				for i in range(20):				
-					controlSize, mySizes = self.dotSolver(n, size)
+				for i in range(20):	
+					mySizes, controlSize = self.dotSolver(n, size)
 					controlSizes.append(controlSize)
 				self.controlValue = sum(controlSizes) / 20
 				return []
+			#controlvalue has been set
 			else:
-				if abs(sum(controlSizes) - self.controlValue) <= 10:
-					return mySize, sum(controlSizes)
+				#check and see whether the control dimension is controlled enough :p
+				if abs(sum(controlSizes) - self.controlValue) <= 20:
+					#it is
+					return mySizes, sum(controlSizes)
 				else:
+					#it isn't
 					return []
+					
+		#we have a list of items and don't want to control it
 		elif mySizes:
 			return mySizes, sum(controlSizes)
 
 
 	def generateLists(self, ns, control=''):
-		control = 'perimeter'
 		#generates the area lists, depending on the ns parameters
-		#print "##generating lists"
 		sizeList = []
 		sepDots = []
 		if type(ns) == int:
 			while not sizeList:
-			
 				sizeList = self.dotSolver(n, self.dotSize, control=control)
 
 		elif type(ns) == list and self.sizectrl == "SC":
+			print "SC"
 			for n in ns:
+
 				areas = []
 				while not areas:
 					areas = self.dotSolver(n, self.dotSize, control=control)
@@ -174,16 +198,22 @@ class DotMaster:
 				sizeList += areas
 				
 		elif type(ns) == list and self.sizectrl == "NSC":
+			print "NSC"
 			for n, area in zip(ns, self.dotSize):
 				areas = []
 				while not areas:
+					print n, area
 					areas = self.dotSolver(n, area, control=control)
+				areas, controlSize = areas
+
 				sepDots.append(areas)
 				sizeList += areas
 		
 		else:
 			print "Just what the hell do you think you're doing"
 
+		print "sizelist %s, sepdots %s" % (sizeList, sepDots)
+			
 		return sizeList, sepDots
 
 	def dotArranger(self, ns):
@@ -194,8 +224,8 @@ class DotMaster:
 		goodList = 0
 		breaks = 0
 
-		sizeList, sepDots = self.generateLists(ns)
-
+		sizeList, sepDots = self.generateLists(ns, self.control)
+		
 		if len(sizeList) != 1:
 
 			while not goodList:
@@ -212,21 +242,18 @@ class DotMaster:
 					#if we've broken the cycle more than 10 times, we should regenerate the area list, 'cause this obviously ain't workin'
 					if breaks > 9:
 						sizeList, sepDots = self.generateLists(ns)
-						#print "regenning area list"
 						breaks = 0
 						dotBoxes = []
 						dotSizes = copy.deepcopy(sizeList)
 
 					while not quit:
 						reps = reps + 1
-						#print reps
 						#if we've tried this too many times, restart the process...
 						if reps > 100000:
 							#delete the list of boxes
 							#put the area back into the list of areas
 							dotSizes = copy.deepcopy(sizeList)
 							#and break the loop
-							#print "(%s)break, n = %s" % (breaks, len(dotBoxes))
 							breaks = breaks + 1
 							dotBoxes = []
 							quit = 1
@@ -264,8 +291,6 @@ class DotMaster:
 								dotSizes.pop()
 								quit = 1
 					count = count + 1
-				#print "SUCCESS: %s" % dotBoxes
-			#print len(dotBoxes), dotBoxes
 		else:
 			a = sizeList[0]
 			r = int(circleRadius(a, self.sizemeasure))
@@ -295,6 +320,7 @@ class DotMaster:
 		#obtain all the possible colors
 		cols = []
 		for d in self.dotBoxes:
+		
 			cols.append(d[4])
 			
 		cols = set(cols)
