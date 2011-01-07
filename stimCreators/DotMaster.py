@@ -199,20 +199,29 @@ class DotMaster:
 				
 		elif type(ns) == list and self.sizectrl == "NSC":
 			print "NSC"
+			areaSums = []
+			perimSums = []
+
 			for n, area in zip(ns, self.dotSize):
 				areas = []
 				while not areas:
-					print n, area
 					areas = self.dotSolver(n, area, control=control)
 				areas, controlSize = areas
-
+				perims = map(lambda(x) : circleRadius(x, "area") * 2 * math.pi, areas)
+				areaSums.append(sum(areas))
+				perimSums.append(sum(perims))
+		
 				sepDots.append(areas)
 				sizeList += areas
+
+			print areaSums
+			print perimSums
+
 		
 		else:
 			print "Just what the hell do you think you're doing"
 
-		print "sizelist %s, sepdots %s" % (sizeList, sepDots)
+		#print "sizelist %s, sepdots %s" % (sizeList, sepDots)
 			
 		return sizeList, sepDots
 
