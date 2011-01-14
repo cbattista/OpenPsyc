@@ -1,8 +1,9 @@
 import sys
+import random
 
 sys.path.append('/home/cogdev/code/OpenPsyc/')
 
-from mongoTools import ReadTable
+import mongoTools
 
 #UPLOAD THE DATA FROM pre test AND THEN TRAIN
 
@@ -11,11 +12,13 @@ try:
 except:
 	sys.stderr("You need to specify a participant ID")
 
-fileName = "pre/pre*%s.csv" % number
+fileName = "pre/pre_%s*.csv" % number
 dbName = "magnitude"
-tableName = "production_pre"
+tableName = "pre"
 
-reader = ReadTable(fileName = fileName, dbName=dbName, tableName = tableName, clear=False)
+db = mongoTools.MongoAdmin(dbName)
+
+reader = mongoTools.ReadTable(fileName = fileName, dbName=dbName, tableName = tableName, clear=True)
 
 posts = db.getTable("pre").posts
 
@@ -35,7 +38,10 @@ fullList = []
 
 #TRAINED CALC PROBLEMS
 
-result = posts.find({'strategy' : 'calc', 's_id' : int(number), 'verified' : 1})
+s = 'calc'
+t_num = 20
+
+result = posts.find({'strategy' : s, 's_id' : int(number), 'verified' : 1})
 for r in result:
 	n1 = r['n1']
 	n2 = r['n2']
@@ -55,7 +61,7 @@ quit = 0
 
 
 while not quit:
-	if len(probList) >= 20:
+	if len(probList) >= t_num:
 		quit = 1
 		
 	
@@ -63,11 +69,12 @@ while not quit:
 		ns = fullList.pop()
 		if ns not in probList:
 			probList.append(ns)
+	
 	else:
 		prob = "NA"
 		probList.append(prob)
 
-probList = probList[:20]
+probList = probList[:t_num]
 
 for p in probList:
 	row = {}
@@ -81,14 +88,13 @@ for p in probList:
 
 #add the problems to the verification set, output them
 #random.shuffle(probList)
-for p in probList[:20]:
+for p in probList[:t_num]:
 	row = {}
 	row['s_id'] = number
 	row['n1'] = p[0]
 	row['n2'] = p[1]
 	row['orig_strat'] = s
 	row['trained'] = 'trained'
-	v_posts.insert(row)
 	p_posts.insert(row)
 
 postList = []
@@ -107,7 +113,7 @@ for r in result:
 random.shuffle(postList)
 
 #10 problems for the post training list and verification list
-for p in postList[:20]:
+for p in postList[:t_num]:
 	row = {}
 	row['s_id'] = number
 	row['n1'] = p[0]
@@ -115,7 +121,6 @@ for p in postList[:20]:
 	row['orig_strat'] = s
 	row['trained'] = "novel"
 	p_posts.insert(row)
-	v_posts.insert(row)
 
 f.close()
 

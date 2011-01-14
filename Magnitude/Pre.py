@@ -27,7 +27,6 @@ import subject
 ###COLLECT SUBJECT INFO
 myArgs = sys.argv
 
-print myArgs
 
 number = str(myArgs[1])
 
@@ -118,6 +117,12 @@ def key_handler(event):
 		p2.parameters.go_duration = (0, 'frames')
 
 
+def pause_handler(event):
+	if event.key == K_SPACE:
+		print "BEGINNING EXPERIMENT"
+		pause.parameters.go_duration = (0, 'frames')
+
+
 #problem adjustment values
 add = [4,5,6,7]
 subtract = [1,2,3]
@@ -156,6 +161,14 @@ strategy = None
 ns = []
 lastns = []
 lastlastns = []
+
+fixText, fixCross = printWord(screen, '', 60, (255, 255, 255), h_anchor = 2.5)
+
+print "PRESS SPACE TO START"
+
+pause = Presentation(go_duration=('forever', ), viewports=[fixCross])
+pause.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, pause_handler)]  
+pause.go()
 
 while len(memProblems) < trials or len(calcProblems) < trials:
 	#generate problem based on last round
@@ -197,7 +210,7 @@ while len(memProblems) < trials or len(calcProblems) < trials:
 		ns = problemHeap.pop(0)
 
 	else:
-
+		badCycles = 0
 		while badProblem:
 			#if the strategy was "calculation", reduce the size of the number
 			if strategy == "calc" and len(memProblems) < trials:
@@ -242,6 +255,11 @@ while len(memProblems) < trials or len(calcProblems) < trials:
 				n2 = n2 /2
 				badProblem = True
 
+			badCycles += 1
+			#if we are stuck in an infinite loop
+			if badCycles >= 100000:
+				print "Breaking loop"
+				badProblem = False
 
 	subject.inputData(trial, "n1", ns[0])
 	subject.inputData(trial, "n2", ns[1])
@@ -260,26 +278,23 @@ while len(memProblems) < trials or len(calcProblems) < trials:
 
 	info = "mems: %s/%s, tmems: %s, calcs: %s/%s, tcalcs: %s, heap: %s" % (len(memProblems), trials, len(memTemp), len(calcProblems), trials, len(calcTemp), len(problemHeap))
 
-	print n1 + n2
-	print info
+	print "-------------------------------------"
+	print "PROBLEM : %s" % problem
+	print "SOLUTION : %s" % solution
+	print "STATUS : %s" % info
+	print "-------------------------------------"
 
-
-	viewtext, viewport = printWord(screen, problem, 60, (255, 255, 255), h_anchor = 2.9)
-	solText, solPort = printWord(screen, solution, 60, (255, 255, 255), v_anchor = 1.0)
-	infoText, infoPort = printWord(screen, info, 36, (255, 255, 255), v_anchor = 0.5)
-	
-	stratText, stratPort = printWord(screen, strat2, 60, (255, 255, 255), h_anchor = 2.7)
-	expText, expPort = printWord(screen, problem, 60, (255, 255, 255), v_anchor = 1.5)
-	fixText, fixCross = printWord(screen, '', 60, (255, 255, 255), h_anchor = 2.5)
+	stratText, stratPort = printWord(screen, strat2, 60, (255, 255, 255), h_anchor = 1.3, v_anchor = 0.75)
+	expText, expPort = printWord(screen, problem, 60, (255, 255, 255), h_anchor = 2)
 
 	#BLOCK 1 - Problem & RESPONSE
 
-	p = Presentation(go_duration=('forever', ), viewports=[viewport])
+	p = Presentation(go_duration=('forever', ), viewports=[expPort])
 	p.add_controller(None, None, FunctionController(during_go_func=problem_controller, temporal_variables = FRAMES_ABSOLUTE))
 	p.go()
 
 	#BLOCK 2 - STRATEGY SELECTION & GRADING
-	p2 = Presentation(go_duration=('forever', ), viewports=[solPort, infoPort, stratPort])
+	p2 = Presentation(go_duration=('forever', ), viewports=[expPort, stratPort])
 	p2.add_controller(None, None, FunctionController(during_go_func=strategy_controller, temporal_variables = FRAMES_ABSOLUTE))
 	p2.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, key_handler)]        
 	p2.go()
