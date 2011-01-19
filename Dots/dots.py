@@ -53,7 +53,7 @@ f.close()
 	
 screen = get_default_screen()
 
-screen.parameters.bgcolor = [66, 65, 66]
+screen.parameters.bgcolor = (.52, .51, .52)
 
 pygame.init()
 
