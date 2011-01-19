@@ -113,11 +113,15 @@ for block in blockOrder:
 	csShuffler = shuffler.MultiShuffler([sides, colors], trials)
 	csList = csShuffler.shuffle()
 	
+	print "loading pause durations..."
+	pauseTimes = [.250, .350, .450, .550, .650, .750] * 40
+	random.shuffle(pauseTimes)
+
 	instructionText = "In this experiment you will see 2 groups of dots, 1 yellow group, and 1 blue group.\nYour job is to choose which color group has more dots in it.\nPress %s for yellow, press %s for blue.\nPRESS SPACE TO CONTINUE." % (yellowB, blueB)
 		
 	experiments.showInstructions(screen, instructionText)
 
-	for stim, cs in zip(stimList, csList):
+	for stim, cs, pause in zip(stimList, csList, pauseTimes):
 		ratio = getattr(stim, "ratio")
 		n1 = getattr(stim, "seed")
 		n2 = int(n1 * 1/ratio)
@@ -139,7 +143,8 @@ for block in blockOrder:
 		sub.inputData(trial, "largecolor", cDict[color])
 		sub.inputData(trial, "yellowButton", yellowB)
 		sub.inputData(trial, "blueButton", blueB)
-		
+		sub.inputData(trial, "pauseTime", pause)		
+
 		if block == "overlapping":
 			fname = "%s_%s_%s_%s_%s_OL.bmp" % (ratio, n1, color, size, exemplar)
 						
@@ -212,6 +217,13 @@ for block in blockOrder:
 				mv = Viewport(screen=screen, stimuli=[ms1, ms2])
 				mask = Presentation(go_duration = (0.5, 'seconds'), viewports=[mv])
 				mask.go()
+
+		#show blank screen
+		fixText, fixCross = experiments.printWord(screen, '+', 60, (0, 0, 0))
+
+
+		pause = Presentation(go_duration=(pause, 'seconds'), viewports=[fixCross])
+		pause.go()
 						
 		trial += 1
 		sub.printData()
