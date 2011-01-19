@@ -10,16 +10,31 @@ from VisionEgg.Textures import *
 from VisionEgg.Core import *
 from VisionEgg.FlowControl import TIME_INDEPENDENT
 
-sys.path.append("/home/xian/OpenPsyc")
+sys.path.append("/home/ansarilab/code/OpenPsyc")
 
 import experiments
 import subject
 import shuffler
 import CBalance
 
-sub = subject.Subject(1, experiment = "dots")
+myArgs = sys.argv
+
+try:
+	number = int(myArgs[1])
+except:
+	number = 666
+
+sub = subject.Subject(number, experiment = "dots")
+
+
+#SETTINGS
 
 blocks = ["sequential", "paired", "overlapping"]
+
+breakText = "Time for a break.\nPRESS SPACE TO CONTINUE."
+break_trial = 60
+trials = 240
+
 
 if os.path.exists("cb.pck"):
 	f = open("cb.pck")
@@ -87,8 +102,15 @@ def keyFunc(event):
 			sub.inputData(trial, "ACC", 1)
 		else:
 			sub.inputData(trial, "ACC", 0)
+
+#fixation pause
+#show blank screen
+fixText, fixCross = experiments.printWord(screen, '+', 60, (0, 0, 0))
+pause = Presentation(go_duration=(0.5, 'seconds'), viewports=[fixCross])
+
 			
 for block in blockOrder:
+
 	print "entering block %s" % block
 	ratios = shuffler.Condition([.83, .8, .75, .5, .33, .25], "ratio", 6)
 	seeds = shuffler.Condition([4, 5, 6, 7, 8], "seed", 6)
@@ -97,7 +119,6 @@ for block in blockOrder:
 		
 	order = ["large", "small"]
 	color = ["C1", "C2"]
-	trials = 240
 
 	cDict = {}
 	cDict["C1"] = "blue"
@@ -117,11 +138,38 @@ for block in blockOrder:
 	pauseTimes = [.250, .350, .450, .550, .650, .750] * 40
 	random.shuffle(pauseTimes)
 
+
+	print "creating stimulus displays windows..."
+	if block == "overlapping" or "sequential":
+		x = screen.size[0] / 2
+		y = screen.size[1] / 2
+
+		mt = Texture(Image.open("mask.BMP"))
+		ms = TextureStimulus(texture = mt, position = (x, y), anchor = 'center')
+		mv = Viewport(screen=screen, stimuli=[ms])
+		mask = Presentation(go_duration = (0.5, 'seconds'), viewports=[mv])
+	else:
+		x = screen.size[0] / 4
+		y = screen.size[1] / 2
+
+		mt1 = Texture(Image.open("mask.BMP"))
+		mt2 = Texture(Image.open("mask.BMP"))
+		ms1 = TextureStimulus(texture = mt1, position = (x, y), anchor = 'center')
+		ms2 = TextureStimulus(texture = mt2, position = (x * 3, y), anchor = 'center')
+		mv = Viewport(screen=screen, stimuli=[ms1, ms2])
+		mask = Presentation(go_duration = (0.5, 'seconds'), viewports=[mv])
+
+	print "creating instructions..."
 	instructionText = "In this experiment you will see 2 groups of dots, 1 yellow group, and 1 blue group.\nYour job is to choose which color group has more dots in it.\nPress %s for yellow, press %s for blue.\nPRESS SPACE TO CONTINUE." % (yellowB, blueB)
 		
+
+	print "Beginning block now..."
 	experiments.showInstructions(screen, instructionText)
 
-	for stim, cs, pause in zip(stimList, csList, pauseTimes):
+	for stim, cs, pauseTime in zip(stimList, csList, pauseTimes):
+		pause.parameters.go_duration = (pauseTime, 'seconds')
+		pause.go()
+
 		ratio = getattr(stim, "ratio")
 		n1 = getattr(stim, "seed")
 		n2 = int(n1 * 1/ratio)
@@ -143,24 +191,18 @@ for block in blockOrder:
 		sub.inputData(trial, "largecolor", cDict[color])
 		sub.inputData(trial, "yellowButton", yellowB)
 		sub.inputData(trial, "blueButton", blueB)
-		sub.inputData(trial, "pauseTime", pause)		
+		sub.inputData(trial, "pauseTime", pauseTime)		
 
 		if block == "overlapping":
 			fname = "%s_%s_%s_%s_%s_OL.bmp" % (ratio, n1, color, size, exemplar)
 						
 			t = Texture(Image.open(os.path.join(stimLib, fname)))
-			x = screen.size[0] / 2
-			y = screen.size[1] / 2
 			s = TextureStimulus(texture = t, position = (x, y), anchor = 'center')
 			v = Viewport(screen=screen, stimuli=[s])
 			p = Presentation(go_duration = (0.5, 'seconds'), viewports=[v])
 			p.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, keyFunc)]
 			p.go()
 			
-			mt = Texture(Image.open("mask.BMP"))
-			ms = TextureStimulus(texture = mt, position = (x, y), anchor = 'center')
-			mv = Viewport(screen=screen, stimuli=[ms])
-			mask = Presentation(go_duration = (0.5, 'seconds'), viewports=[mv])
 			mask.go()
 		
 		else:
@@ -176,9 +218,6 @@ for block in blockOrder:
 			t2 = Texture(Image.open(os.path.join(stimLib,fname2)))
 
 			if block == "sequential":
-				x = screen.size[0] / 2
-				y = screen.size[1] / 2
-
 				s1 = TextureStimulus(texture = t1, position = (x, y), anchor = 'center')
 				s2 = TextureStimulus(texture = t2, position = (x, y), anchor = 'center')	
 
@@ -192,16 +231,9 @@ for block in blockOrder:
 				p1.go()
 				p.go()
 
-				mt = Texture(Image.open("mask.BMP"))
-				ms = TextureStimulus(texture = mt, position = (x, y), anchor = 'center')
-				mv = Viewport(screen=screen, stimuli=[ms])
-				mask = Presentation(go_duration = (0.5, 'seconds'), viewports=[mv])
 				mask.go()
 				
 			else:
-				x = screen.size[0] / 4
-				y = screen.size[1] / 2
-				
 				s1 = TextureStimulus(texture = t1, position = (x, y), anchor = 'center')
 				s2 = TextureStimulus(texture = t2, position = (x * 3, y), anchor = 'center')	
 
@@ -210,21 +242,11 @@ for block in blockOrder:
 				p.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, keyFunc)]
 				p.go()
 
-				mt1 = Texture(Image.open("mask.BMP"))
-				mt2 = Texture(Image.open("mask.BMP"))
-				ms1 = TextureStimulus(texture = mt1, position = (x, y), anchor = 'center')
-				ms2 = TextureStimulus(texture = mt2, position = (x * 3, y), anchor = 'center')
-				mv = Viewport(screen=screen, stimuli=[ms1, ms2])
-				mask = Presentation(go_duration = (0.5, 'seconds'), viewports=[mv])
 				mask.go()
 
-		#show blank screen
-		fixText, fixCross = experiments.printWord(screen, '+', 60, (0, 0, 0))
-
-
-		pause = Presentation(go_duration=(pause, 'seconds'), viewports=[fixCross])
-		pause.go()
-						
 		trial += 1
 		sub.printData()
+
+		if trial % break_trial == 0 and trial != trials:
+			experiments.showInstructions(screen, breakText)
 

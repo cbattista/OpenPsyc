@@ -2,7 +2,7 @@ from DotMaster import *
 
 bgcolor = (132, 130, 132)
 colors = [(255, 255, 16), (0, 4, 214)]
-box = (680, 680) #region of screen occupied by dots
+box = (620, 680) #region of screen occupied by dots
 #areas = [0.05, 0.1, 0.15, 0.2, 0.25] #area of box taken up by dots
 area = 0.045
 
