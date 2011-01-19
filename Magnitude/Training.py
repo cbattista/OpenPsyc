@@ -10,6 +10,7 @@ import serial
 import pickle
 import time
 import random
+import copy
 
 from pygame.locals import *
 import sys
@@ -33,26 +34,24 @@ condition = str(myArgs[2])
 
 
 #create subject
-subject = subject.Subject(number, 1, 1, "training")
+subject = subject.Subject(number, experiment = "training")
 
 #connect to db
 db = MongoAdmin("magnitude")
 
 #retrieve problems
-posts = db.getTable("post_sets").posts
+posts = db.getTable("training_sets").posts
 
 q= {}
-q['s_id'] = number
-q['trained'] = 1
+q['s_id'] = str(number)
 
 problems = []
 
 for r in posts.find(q):
 	ns = [r['n1'], r['n2']]
-	trained = r['trained']
-	orig_strat = r['orig_strat']
+	orig_strat = r['strategy']
 
-	problems.append([ns, trained, orig_strat])
+	problems.append([ns, orig_strat])
 
 
 def normalize(u):
@@ -66,6 +65,7 @@ def normalize(u):
 
 #determine all ratios
 allnums = []
+
 for p in problems:
 	n1 = p[0][0]
 	n2 = p[0][1]
@@ -74,28 +74,33 @@ for p in problems:
 
 brightness = normalize(allnums)
 
-
-
-
-add_problems = problems * 10
+add_problems = []
 
 bad = False
 quit = 0
 
 #make production list
 while not quit:
-	random.shuffle(add_problems)
+	
+	for i in range(10):
+		random.seed()
+		random.shuffle(problems)
+		add_problems += problems
 	last_five = []
+	count = 1
 	for p in add_problems:
 		if p in last_five:
 			bad = True
+			print count
 			break
+		else:	
+			if len(last_five) < 5:
+				last_five.append(p)
+			else:
+				last_five.pop(0)
+				last_five.append(p)
 
-		if len(last_five) < 5:
-			last_five.append(p)
-		else:
-			last_five.pop(0)
-			last_five.append(p)
+		count += 1
 
 	if not bad:
 		quit = True
