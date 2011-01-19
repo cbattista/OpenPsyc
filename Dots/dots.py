@@ -10,7 +10,7 @@ from VisionEgg.Textures import *
 from VisionEgg.Core import *
 from VisionEgg.FlowControl import TIME_INDEPENDENT
 
-sys.path.append("/home/ansarilab/code/OpenPsyc")
+sys.path.append(os.path.split(os.getcwd())[0])
 
 import experiments
 import subject
