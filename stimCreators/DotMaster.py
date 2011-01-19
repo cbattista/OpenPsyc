@@ -22,32 +22,6 @@ def fromRadius(r, measure):
 	else:
 		return None
 		
-#make a left/right dot array stimulus from two groups of bounding boxes
-def makeStimulus(name, dots1, size, bgcolor, color, dots2=[], dpi=(96, 96)):
-	if dots2:
-		image = Image.new("RGB", [size[0] * 2, size[1]], bgcolor)    
-	else:
-		image = Image.new("RGB", size, bgcolor)
-
-	draw = ImageDraw.Draw(image)
-
-	for d1 in dots1:
-		#draw the dots on the left
-		box1 = [d1[0] - d1[2], d1[1] - d1[2], d1[0] + d1[2], d1[1] + d1[2]]
-		draw.ellipse(box1, fill = color)
-
-	if dots2:
-		for d2 in dots2:
-			#draw the dots on the right
-			box2 = [d2[0] - d2[2] + size[0], d2[1] - d2[2], d2[0] + d2[2] + size[0], d2[1] + d2[2]]
-			draw.ellipse(box2, fill = color)
-
-		draw.line([size[0], 0, size[0], size[1]], fill = color, width = 2)
-	del draw
-	#image = image.filter(ImageFilter.BLUR)
-
-	image.save("%s_NONSYM.bmp" % name, "BMP", dpi=dpi)
-
 def makeSymStimulus(name, n1, size, bgcolor, color,  n2=[], dpi = (96,96)):
 	#now let us make the image with the number in it
 	if n2:
@@ -74,26 +48,18 @@ def makeSymStimulus(name, n1, size, bgcolor, color,  n2=[], dpi = (96,96)):
 	image.save("%s_SYM.bmp" % name, "BMP", dpi=dpi)
    
 class DotMaster:
-	def __init__(self, box, dotsize, sizemeasure='area', sizectrl = 'SC', density=5, separation=10, colors =[[255, 255, 255]], bgcolor = [0,0,0], control=''):
+	def __init__(self, box, dotsize, sizemeasure='area', sizectrl = 'SC', density=5, separation=10, colors =[[255, 255, 255]], bgcolor = [0,0,0], control='', logFile = "dot_log.csv"):
 		self.box = box
-
+		self.logFile = logFile
+		self.ctl_iters = 1
 		#if one item size provided
-		if type(dotsize) != list:
-			#control the sizes of both groups of items
-			self.sizectrl = "SC"
+		#otherwise don't size control
+		self.dotSize = []
+		for d in dotsize:
 			if sizemeasure == 'area':
-				self.dotSize = box[0] * box[1] * dotsize
+				self.dotSize.append(box[0] * box[1] * d)
 			elif sizemeasure == 'perimeter':
-				self.dotSize = (box[0] + box[1]) * dotsize
-		else:
-			#otherwise don't size control
-			self.sizectrl = "NSC"
-			self.dotSize = []
-			for d in dotsize:
-				if sizemeasure == 'area':
-					self.dotSize.append(box[0] * box[1] * d)
-				elif sizemeasure == 'perimeter':
-					self.dotSize.append((box[0] + box[1]) * d)
+				self.dotSize.append((box[0] + box[1]) * d)
 			
 		self.sizemeasure = sizemeasure
 		self.density = density
@@ -104,7 +70,7 @@ class DotMaster:
 		self.control = control
 		self.controlValue = False
 
-	def dotSolver(self, n, size, MIN=.3, MAX=.7, control = ''):
+	def dotSolver(self, n, size, MIN=.2, MAX=.8, control = ''):
 
 		#input - size, number of dots
 		#output - radius of each dot
@@ -159,19 +125,30 @@ class DotMaster:
 			#control value has not been set
 			if self.controlValue == False:	
 				controlSizes = []
-				for i in range(20):	
+				iters = 100
+				for i in range(iters):
 					mySizes, controlSize = self.dotSolver(n, size)
 					controlSizes.append(controlSize)
-				self.controlValue = sum(controlSizes) / 20
+				self.controlValue = sum(controlSizes) / iters
+				print "CONTROL VALUE : %s" % self.controlValue
 				return []
 			#controlvalue has been set
 			else:
-				#check and see whether the control dimension is controlled enough :p
-				if abs(sum(controlSizes) - self.controlValue) <= 20:
-					#it is
+				
+				#% similarity of controlled value
+				threshold = 85
+				vals = [self.controlValue, sum(controlSizes)]
+				control_ratio =  min(vals) / float(max(vals)) * 100.
+				#check and see whether the control dimension is controlled enough (95% threshold)
+				#print control_ratio
+				print self.ctl_iters
+				if control_ratio >= threshold or self.ctl_iters <= 1000:
+					#it is, so we're done and we can reset the control value
+					self.ctl_iters = 1
 					return mySizes, sum(controlSizes)
 				else:
 					#it isn't
+					self.ctl_iters += 1
 					return []
 					
 		#we have a list of items and don't want to control it
@@ -186,21 +163,10 @@ class DotMaster:
 		if type(ns) == int:
 			while not sizeList:
 				sizeList = self.dotSolver(n, self.dotSize, control=control)
-
-		elif type(ns) == list and self.sizectrl == "SC":
-			print "SC"
-			for n in ns:
-
-				areas = []
-				while not areas:
-					areas = self.dotSolver(n, self.dotSize, control=control)
-				sepDots.append(areas)
-				sizeList += areas
 				
-		elif type(ns) == list and self.sizectrl == "NSC":
-			print "NSC"
+		elif type(ns) == list:
 			areaSums = []
-			perimSums = []
+			periSums = []
 
 			for n, area in zip(ns, self.dotSize):
 				areas = []
@@ -208,21 +174,24 @@ class DotMaster:
 					areas = self.dotSolver(n, area, control=control)
 				areas, controlSize = areas
 				perims = map(lambda(x) : circleRadius(x, "area") * 2 * math.pi, areas)
-				areaSums.append(sum(areas))
-				perimSums.append(sum(perims))
+				areaSums.append(int(sum(areas)))
+				periSums.append(int(sum(perims)))
 		
 				sepDots.append(areas)
 				sizeList += areas
 
-			print areaSums
-			print perimSums
+			self.areaSums = areaSums
+			self.periSums = periSums
+			area_r = float(areaSums[0]) / areaSums[1]
+			peri_r = float(periSums[0]) / periSums[1]
 
-		
+			self.size_log = "%s, %s, %s, %s, %s, %s" % (areaSums[0], areaSums[1], round(area_r, 2), periSums[0], periSums[1], round(peri_r, 2))
+	
 		else:
 			print "Just what the hell do you think you're doing"
 
 		#print "sizelist %s, sepdots %s" % (sizeList, sepDots)
-			
+		self.controlValue = False
 		return sizeList, sepDots
 
 	def dotArranger(self, ns):
@@ -232,6 +201,10 @@ class DotMaster:
 
 		goodList = 0
 		breaks = 0
+
+		ratio = float(ns[0]) / float(ns[1])
+
+		self.ratio_log = "%s, %s, %s, %s" % (ns[0], ns[1], round(ratio, 2), round(1/ratio, 2))
 
 		sizeList, sepDots = self.generateLists(ns, self.control)
 		
@@ -347,9 +320,12 @@ class DotMaster:
 					
 			del draw
 				
-			image.save("%s_S%s_%s.bmp" % (name, count, self.sizectrl), "BMP", dpi=dpi)
+			fname = "%s_S%s.bmp" % (name, count)
+
+			image.save("output/%s" % fname, "BMP", dpi=dpi)
 				
 			count+=1
+			self.printLog(fname)
 
 	def drawOverlay(self, name, dpi=96):
 		#make a left/right dot array stimulus from two groups of bounding boxes
@@ -364,5 +340,20 @@ class DotMaster:
 
 		del draw
 
-		image.save("%s_OL_%s.bmp" % (name, self.sizectrl), "BMP", dpi=dpi)
-		
+		fname = "%s_OL.bmp" % (name)
+
+		image.save("output/%s" % fname, "BMP", dpi=dpi)
+		self.printLog(fname)		
+
+
+	def printLog(self, fname):
+		if os.path.exists(self.logFile):
+			f = open(self.logFile, "a")
+		else:
+			f = open(self.logFile, "w")
+			f.write("file,n1,n2,ratio,1/ratio,area_n1,area_n2,area_ratio,per_n1,per_n2,per_ratio\n")
+
+		log = "%s, %s, %s" % (fname, self.ratio_log, self.size_log)
+
+		f.write(log + "\n")
+		f.close()

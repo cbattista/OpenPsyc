@@ -2,36 +2,57 @@ from DotMaster import *
 
 bgcolor = (132, 130, 132)
 colors = [(255, 255, 16), (0, 4, 214)]
-box = (480, 720) #region of screen occupied by dots
+box = (680, 680) #region of screen occupied by dots
 #areas = [0.05, 0.1, 0.15, 0.2, 0.25] #area of box taken up by dots
-area = [0.075, 0.15]
+area = 0.045
 
-ratios = [.3, .4, .5, .6, .7, .8]
+ratios = [.83, .8, .75, .5, .33, .25]
 seeds = [4, 5, 6, 7, 8]
-reps = [1]
+reps = [1,2,3,4]
 
-
-
-dotMaster = DotMaster(box, area, sizemeasure = 'area', colors = colors, bgcolor = bgcolor, control='perimeter')
-
+###DO THE AREA CONTROLLED STIMULI
+dotMaster = DotMaster(box, [area, area], sizemeasure = 'area', colors = colors, bgcolor = bgcolor)
 for r in ratios:
+	for s in seeds:
+		print r, s
+		for rep in reps:
+			n1 = s
+			n2 = int(s * 1./r)
+			dotMaster.dotArranger([n1, n2])
+
+			
+			name = "%s_%s_C1_con_%s" % (r, n1, rep)
+		
+			dotMaster.drawOverlay(name)
+			dotMaster.drawSingle(name)
+
+			name = "%s_%s_C2_con_%s" % (r, n1, rep)
+		
+			dotMaster.colors.reverse()
+		
+			dotMaster.drawOverlay(name)
+			dotMaster.drawSingle(name)
+
+
+###DO THE AREA UNCONTROLLED STIMULI
+for r in ratios:
+	myArea = [area/r, area]
+	print myArea
+	dotMaster = DotMaster(box, myArea, sizemeasure = 'area', colors = colors, bgcolor = bgcolor, control='perimeter') 
 	for s in seeds:
 		print r, s
 		for rep in reps:
 			n1 = s
 			n2 = int(s * 1/r)
 			dotMaster.dotArranger([n1, n2])
-
-			
-			name = "%s_%s_C1" % (r, n1)
-		
-			#dotMaster.drawOverlay(name)
+			name = "%s_%s_C1_incon_%s" % (r, n1, rep)		
+			dotMaster.drawOverlay(name)
 			dotMaster.drawSingle(name)
 
-			#name = "%s_%s_%s_%s_C2" % (r, n1, n2, rep)
+			name = "%s_%s_C2_incon_%s" % (r, n1, rep)
 		
-			#dotMaster.colors.reverse()
+			dotMaster.colors.reverse()
 		
-			#dotMaster.drawOverlay(name)
-			#dotMaster.drawSingle(name)
+			dotMaster.drawOverlay(name)
+			dotMaster.drawSingle(name)
 
