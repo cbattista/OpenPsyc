@@ -144,7 +144,6 @@ Note:  Random Rules are specified in the Condition objects, not here.
 """
 class MultiShuffler:
 	def __init__(self, conditions, trials):
-		print "i'm alive"
 		self.conditions = conditions
 		self.trials = trials
 		y = 1
