@@ -160,11 +160,11 @@ for block in blockOrder:
 		mask = Presentation(go_duration = (0.5, 'seconds'), viewports=[mv])
 
 	print "creating instructions..."
-	instructionText = "In this experiment you will see 2 groups of dots, 1 yellow group, and 1 blue group.\nYour job is to choose which color group has more dots in it.\nPress %s for yellow, press %s for blue.\nPRESS SPACE TO CONTINUE." % (yellowB, blueB)
+	instructionText = "In this experiment you will see 2 groups of dots.  Each group will be either yellow or blue.  Your job is to choose which group has more dots in it.\n\nPress %s for yellow.\nPress %s for blue.\n\nPRESS SPACE TO CONTINUE." % (yellowB, blueB)
 		
 
 	print "Beginning block now..."
-	experiments.showInstructions(screen, instructionText)
+	experiments.showInstructions(screen, instructionText, textcolor=(0, 0, 0))
 
 	for stim, cs, pauseTime in zip(stimList, csList, pauseTimes):
 		pause.parameters.go_duration = (pauseTime, 'seconds')
