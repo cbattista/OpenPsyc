@@ -10,7 +10,7 @@ from VisionEgg.Textures import *
 from VisionEgg.Core import *
 from VisionEgg.FlowControl import TIME_INDEPENDENT
 
-sys.path.append("/home/ansarilab/code/OpenPsyc")
+sys.path.append("/home/xian/OpenPsyc")
 
 import experiments
 import subject
@@ -34,14 +34,14 @@ f = open("cb.pck", "w")
 pickle.dump(cb, f)
 f.close()
 
-stimLib = "stimLib"
+stimLib = "stimuli"
 
 if os.path.exists("colButton.pck"):
 	f = open("colButton.pck")
 	col = pickle.load(f)
 	f.close()
 else:
-	col = [1, 2]
+	col = ["Left CTRL", "Right CTRL"]
 
 yellowB = col[0]
 blueB = col[1]
@@ -73,31 +73,28 @@ def keyFunc(event):
 	
 	sub.inputData(trial, "RT", RT)
 	
-	if event.key == pygame.locals.K_1:
-		if yellowB == 1 and correct == "yellow":
+	if event.key == pygame.locals.K_LCTRL:
+		if yellowB == "Left CTRL" and correct == "yellow":
 			sub.inputData(trial, "ACC", 1)
-		elif blueB == 1 and correct == "blue":
-			sub.inputData(trial, "ACC", 1)
-		else:
-			sub.inputData(trial, "ACC", 0)
-	elif event.key == pygame.locals.K_2:
-		if yellowB == 2 and correct == "yellow":
-			sub.inputData(trial, "ACC", 1)
-		elif blueB == 2 and correct == "blue":
+		elif blueB == "Left CTRL" and correct == "blue":
 			sub.inputData(trial, "ACC", 1)
 		else:
 			sub.inputData(trial, "ACC", 0)
-
+	elif event.key == pygame.locals.K_RCTRL:
+		if yellowB == "Right CTRL" and correct == "yellow":
+			sub.inputData(trial, "ACC", 1)
+		elif blueB == "Right CTRL" and correct == "blue":
+			sub.inputData(trial, "ACC", 1)
+		else:
+			sub.inputData(trial, "ACC", 0)
 			
 for block in blockOrder:
-	
-	ratios = shuffler.Condition([.3, .4, .5, .6, .7, .8], "ratio", 6)
+	print "entering block %s" % block
+	ratios = shuffler.Condition([.83, .8, .75, .5, .33, .25], "ratio", 6)
 	seeds = shuffler.Condition([4, 5, 6, 7, 8], "seed", 6)
-	size = shuffler.Condition(["SC", "NSC"], "size", 5)
+	size = shuffler.Condition(["con", "incon"], "size", 5)
 	exemplars = shuffler.Condition([1, 2, 3, 4], "exemplar", 20)
-	
-	noise = [1,2,3,4,5,6,7,8,9]
-	
+		
 	order = ["large", "small"]
 	color = ["C1", "C2"]
 	trials = 240
@@ -105,20 +102,21 @@ for block in blockOrder:
 	cDict = {}
 	cDict["C1"] = "blue"
 	cDict["C2"] = "yellow"
-	
+	print "loading ratio/seed/seize/exemplar order..."
 	myShuffler = shuffler.MultiShuffler([ratios, seeds, size, exemplars], trials)
 	stimList = myShuffler.shuffle()
 
-	sides = shuffler.Condition(order, "sides", 4)
-	colors = shuffler.Condition(color, "colors", 5)
+	sides = shuffler.Condition(order, "sides", 5)
+	colors = shuffler.Condition(color, "colors", 6)
 
+	print "loading sides/colors order..."
 	csShuffler = shuffler.MultiShuffler([sides, colors], trials)
 	csList = csShuffler.shuffle()
 	
 	instructionText = "In this experiment you will see 2 groups of dots, 1 yellow group, and 1 blue group.\nYour job is to choose which color group has more dots in it.\nPress %s for yellow, press %s for blue.\nPRESS SPACE TO CONTINUE." % (yellowB, blueB)
 		
 	experiments.showInstructions(screen, instructionText)
-	
+
 	for stim, cs in zip(stimList, csList):
 		ratio = getattr(stim, "ratio")
 		n1 = getattr(stim, "seed")
@@ -143,7 +141,7 @@ for block in blockOrder:
 		sub.inputData(trial, "blueButton", blueB)
 		
 		if block == "overlapping":
-			fname = "%s_%s_%s_%s_%s_OL_%s.bmp" % (ratio, n1, n2, exemplar, color, size)
+			fname = "%s_%s_%s_%s_%s_OL.bmp" % (ratio, n1, color, size, exemplar)
 						
 			t = Texture(Image.open(os.path.join(stimLib, fname)))
 			x = screen.size[0] / 2
@@ -154,7 +152,7 @@ for block in blockOrder:
 			p.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, keyFunc)]
 			p.go()
 			
-			mt = Texture(Image.open(os.path.join(stimLib, "noise", "%s.BMP" % random.sample(noise, 1)[0])))
+			mt = Texture(Image.open("mask.BMP"))
 			ms = TextureStimulus(texture = mt, position = (x, y), anchor = 'center')
 			mv = Viewport(screen=screen, stimuli=[ms])
 			mask = Presentation(go_duration = (0.5, 'seconds'), viewports=[mv])
@@ -162,11 +160,11 @@ for block in blockOrder:
 		
 		else:
 			if side == "large":
-				fname1 = "%s_%s_%s_%s_%s_S2_%s.bmp" % (ratio, n1, n2, exemplar, color, size)
-				fname2 = "%s_%s_%s_%s_%s_S1_%s.bmp" % (ratio, n1, n2, exemplar, color, size)
+				fname1 = "%s_%s_%s_%s_%s_S2.bmp" % (ratio, n1, color, size, exemplar)
+				fname2 = "%s_%s_%s_%s_%s_S1.bmp" % (ratio, n1, color, size, exemplar)
 			else:
-				fname1 = "%s_%s_%s_%s_%s_S1_%s.bmp" % (ratio, n1, n2, exemplar, color, size)
-				fname2 = "%s_%s_%s_%s_%s_S2_%s.bmp" % (ratio, n1, n2, exemplar, color, size)
+				fname1 = "%s_%s_%s_%s_%s_S1.bmp" % (ratio, n1, color, size, exemplar)
+				fname2 = "%s_%s_%s_%s_%s_S2.bmp" % (ratio, n1, color, size, exemplar)
 				
 			####
 			t1 = Texture(Image.open(os.path.join(stimLib,fname1)))
@@ -189,7 +187,7 @@ for block in blockOrder:
 				p1.go()
 				p.go()
 
-				mt = Texture(Image.open(os.path.join(stimLib, "noise", "%s.BMP" % random.sample(noise, 1)[0])))
+				mt = Texture(Image.open("mask.BMP"))
 				ms = TextureStimulus(texture = mt, position = (x, y), anchor = 'center')
 				mv = Viewport(screen=screen, stimuli=[ms])
 				mask = Presentation(go_duration = (0.5, 'seconds'), viewports=[mv])
@@ -207,8 +205,8 @@ for block in blockOrder:
 				p.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, keyFunc)]
 				p.go()
 
-				mt1 = Texture(Image.open(os.path.join(stimLib, "noise", "%s.BMP" % random.sample(noise, 1)[0])))
-				mt2 = Texture(Image.open(os.path.join(stimLib, "noise", "%s.BMP" % random.sample(noise, 1)[0])))
+				mt1 = Texture(Image.open("mask.BMP"))
+				mt2 = Texture(Image.open("mask.BMP"))
 				ms1 = TextureStimulus(texture = mt1, position = (x, y), anchor = 'center')
 				ms2 = TextureStimulus(texture = mt2, position = (x * 3, y), anchor = 'center')
 				mv = Viewport(screen=screen, stimuli=[ms1, ms2])
@@ -217,4 +215,4 @@ for block in blockOrder:
 						
 		trial += 1
 		sub.printData()
-		
+
