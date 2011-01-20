@@ -38,8 +38,10 @@ break_trial = 60
 trials = 240
 
 #of the total trials, how many do you want to run (good for testing), put -1 for all
-subtrials = -1
+subtrials = 3
 
+#total duration of each dot array, in seconds
+dot_duration = 0.75
 
 
 if os.path.exists("cb.pck"):
@@ -101,7 +103,11 @@ def keyFunc(event):
 fixText, fixCross = experiments.printWord(screen, '+', 60, (0, 0, 0))
 pause = Presentation(go_duration=(0.5, 'seconds'), viewports=[fixCross])
 
-			
+blockIns = {}
+blockIns['paired'] = "The groups will both appear at the same time."
+blockIns['sequential'] = "The groups will appear one after the other."
+blockIns['overlapping'] = "The groups will both appear at the same time."
+		
 for block in blockOrder:
 
 	print "creating instructions..."
@@ -122,7 +128,8 @@ for block in blockOrder:
 	yellowB = col[0]
 	blueB = col[1]
 
-	instructionText = "In this experiment you will see 2 groups of dots.  Each group will be either yellow or blue.  Your job is to choose which group has more dots in it.\n\nPress %s for yellow.\nPress %s for blue.\n\nPRESS SPACE TO CONTINUE." % (yellowB, blueB)
+	
+	instructionText = "In this experiment you will see 2 groups of dots.\n%s\n  Each group will be either yellow or blue.  Your job is to choose which group has more dots in it.\n\nPress %s for yellow.\nPress %s for blue.\n\nPRESS SPACE TO CONTINUE." % (blockIns[block], yellowB, blueB)
 
 
 	print "entering block %s" % block
@@ -213,7 +220,7 @@ for block in blockOrder:
 			t = Texture(Image.open(os.path.join(stimLib, fname)))
 			s = TextureStimulus(texture = t, position = (x, y), anchor = 'center')
 			v = Viewport(screen=screen, stimuli=[s])
-			p = Presentation(go_duration = ('forever', ), viewports=[v])
+			p = Presentation(go_duration = (dot_duration, 'seconds'), viewports=[v])
 			p.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, keyFunc)]
 			p.go()
 			
@@ -239,9 +246,9 @@ for block in blockOrder:
 				v1 = Viewport(screen=screen, stimuli=[s1])
 				v2 = Viewport(screen=screen, stimuli=[s2])
 				
-				p1 = Presentation(go_duration=(0.5, 'seconds'), viewports=[v1])
+				p1 = Presentation(go_duration=(dot_duration, 'seconds'), viewports=[v1])
 				mask.go()
-				p = Presentation(go_duration=('forever', ), viewports=[v2])
+				p = Presentation(go_duration=(dot_duration, 'seconds'), viewports=[v2])
 				mask.go()
 				p.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, keyFunc)]
 				p1.go()
@@ -254,7 +261,7 @@ for block in blockOrder:
 				s2 = TextureStimulus(texture = t2, position = (x * 3, y), anchor = 'center')	
 
 				v = Viewport(screen=screen, stimuli=[s1,s2])
-				p = Presentation(go_duration=('forever', ), viewports=[v])
+				p = Presentation(go_duration=(dot_duration, 'seconds'), viewports=[v])
 				p.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, keyFunc)]
 				p.go()
 
