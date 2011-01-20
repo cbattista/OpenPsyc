@@ -38,7 +38,7 @@ break_trial = 60
 trials = 240
 
 #of the total trials, how many do you want to run (good for testing), put -1 for all
-subtrials = -1
+subtrials = 5
 
 
 
@@ -56,21 +56,6 @@ pickle.dump(cb, f)
 f.close()
 
 stimLib = "stimuli"
-
-if os.path.exists("colButton.pck"):
-	f = open("colButton.pck")
-	col = pickle.load(f)
-	f.close()
-else:
-	col = ["Left CTRL", "Right CTRL"]
-
-yellowB = col[0]
-blueB = col[1]
-
-f = open("colButton.pck", "w")
-col.reverse()
-pickle.dump(col, f)
-f.close()
 	
 screen = get_default_screen()
 
@@ -118,6 +103,27 @@ pause = Presentation(go_duration=(0.5, 'seconds'), viewports=[fixCross])
 
 			
 for block in blockOrder:
+
+	print "creating instructions..."
+	
+	if os.path.exists("colButton.pck"):
+		f = open("colButton.pck", "r")
+		col = pickle.load(f) 
+		col.reverse()
+		f.close()
+	else:
+		col = ["Left CTRL", "Right CTRL"]
+
+	f = open("colButton.pck", "w")
+	pickle.dump(col, f)
+	f.close()
+
+
+	yellowB = col[0]
+	blueB = col[1]
+
+	instructionText = "In this experiment you will see 2 groups of dots.  Each group will be either yellow or blue.  Your job is to choose which group has more dots in it.\n\nPress %s for yellow.\nPress %s for blue.\n\nPRESS SPACE TO CONTINUE." % (yellowB, blueB)
+
 
 	print "entering block %s" % block
 	ratios = shuffler.Condition([.83, .8, .75, .5, .33, .25], "ratio", 6)
@@ -169,9 +175,6 @@ for block in blockOrder:
 		ms2 = TextureStimulus(texture = mt2, position = (x * 3, y), anchor = 'center')
 		mv = Viewport(screen=screen, stimuli=[ms1, ms2])
 		mask = Presentation(go_duration = (0.5, 'seconds'), viewports=[mv])
-
-	print "creating instructions..."
-	instructionText = "In this experiment you will see 2 groups of dots.  Each group will be either yellow or blue.  Your job is to choose which group has more dots in it.\n\nPress %s for yellow.\nPress %s for blue.\n\nPRESS SPACE TO CONTINUE." % (yellowB, blueB)
 		
 
 	print "Beginning block now..."
