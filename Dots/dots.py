@@ -33,7 +33,13 @@ blocks = ["sequential", "paired", "overlapping"]
 
 breakText = "Time for a break.\nPRESS SPACE TO CONTINUE."
 break_trial = 60
+
+#total trials
 trials = 240
+
+#of the total trials, how many do you want to run (good for testing), put -1 for all
+subtrials = 5
+
 
 
 if os.path.exists("cb.pck"):
@@ -103,6 +109,8 @@ def keyFunc(event):
 		else:
 			sub.inputData(trial, "ACC", 0)
 
+	p.parameters.go_duration = (0.1, 'seconds')
+
 #fixation pause
 #show blank screen
 fixText, fixCross = experiments.printWord(screen, '+', 60, (0, 0, 0))
@@ -140,7 +148,7 @@ for block in blockOrder:
 
 
 	print "creating stimulus displays windows..."
-	if block == "overlapping" or "sequential":
+	if block == "overlapping" or block == "sequential":
 		x = screen.size[0] / 2
 		y = screen.size[1] / 2
 
@@ -149,8 +157,11 @@ for block in blockOrder:
 		mv = Viewport(screen=screen, stimuli=[ms])
 		mask = Presentation(go_duration = (0.5, 'seconds'), viewports=[mv])
 	else:
+
 		x = screen.size[0] / 4
 		y = screen.size[1] / 2
+
+		print x
 
 		mt1 = Texture(Image.open("mask.BMP"))
 		mt2 = Texture(Image.open("mask.BMP"))
@@ -166,7 +177,7 @@ for block in blockOrder:
 	print "Beginning block now..."
 	experiments.showInstructions(screen, instructionText, textcolor=(0, 0, 0))
 
-	for stim, cs, pauseTime in zip(stimList, csList, pauseTimes):
+	for stim, cs, pauseTime in zip(stimList[:subtrials], csList[:subtrials], pauseTimes[:subtrials]):
 		pause.parameters.go_duration = (pauseTime, 'seconds')
 		pause.go()
 
@@ -199,7 +210,7 @@ for block in blockOrder:
 			t = Texture(Image.open(os.path.join(stimLib, fname)))
 			s = TextureStimulus(texture = t, position = (x, y), anchor = 'center')
 			v = Viewport(screen=screen, stimuli=[s])
-			p = Presentation(go_duration = (0.5, 'seconds'), viewports=[v])
+			p = Presentation(go_duration = ('forever', ), viewports=[v])
 			p.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, keyFunc)]
 			p.go()
 			
@@ -226,19 +237,21 @@ for block in blockOrder:
 				v2 = Viewport(screen=screen, stimuli=[s2])
 				
 				p1 = Presentation(go_duration=(0.5, 'seconds'), viewports=[v1])
-				p = Presentation(go_duration=(0.5, 'seconds'), viewports=[v2])
+				mask.go()
+				p = Presentation(go_duration=('forever', ), viewports=[v2])
+				mask.go()
 				p.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, keyFunc)]
 				p1.go()
 				p.go()
 
-				mask.go()
+				
 				
 			else:
 				s1 = TextureStimulus(texture = t1, position = (x, y), anchor = 'center')
 				s2 = TextureStimulus(texture = t2, position = (x * 3, y), anchor = 'center')	
 
 				v = Viewport(screen=screen, stimuli=[s1,s2])
-				p = Presentation(go_duration=(0.5, 'seconds'), viewports=[v])
+				p = Presentation(go_duration=('forever', ), viewports=[v])
 				p.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, keyFunc)]
 				p.go()
 
