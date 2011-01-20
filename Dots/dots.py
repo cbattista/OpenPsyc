@@ -38,7 +38,7 @@ break_trial = 60
 trials = 240
 
 #of the total trials, how many do you want to run (good for testing), put -1 for all
-subtrials = 5
+subtrials = -1
 
 
 
