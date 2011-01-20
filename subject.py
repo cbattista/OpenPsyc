@@ -5,11 +5,11 @@ import time
 import pickle
 
 class Subject:
-	def __init__(self, number="unknown", session="unknown", run="unknown", experiment="unknown"):		
+	def __init__(self, number=666, session="", run="", experiment="unknown"):		
 		self.number = number
 		self.session = session
 		self.run = run
-		self.date = time.localtime()
+		self.date = time.strftime("%d_%b_%y_%I_%M%p")
 		#create dictionary to hold trial results
 		self.fname = "%s_%s_%s_%s_%s.csv" % (experiment, number, session, run, self.date)
 		self.results = {}
