@@ -59,6 +59,7 @@ def printText (screen, theText, fontSize, theColor):
 	spacebuff.y = screensize[1] - (screensize[1]/12)
 	myFont = pygame.font.Font(None, fontSize)
 	fittedText = []
+	theText = theText.split('\n')
 	for line in theText:
 		myWords = line.split(' ')
 		doesItFit = ""
