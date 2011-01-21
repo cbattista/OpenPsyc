@@ -42,7 +42,8 @@ subtrials = -1
 
 #total duration of each dot array, in seconds
 dot_duration = 0.75
-
+#total duration of each mask
+mask_dur = 0.5
 
 if os.path.exists("cb.pck"):
 	f = open("cb.pck")
@@ -107,7 +108,7 @@ blockIns = {}
 blockIns['paired'] = "The groups will both appear at the same time."
 blockIns['sequential'] = "The groups will appear one after the other."
 blockIns['overlapping'] = "The groups will both appear at the same time."
-		
+
 for block in blockOrder:
 
 	print "creating instructions..."
@@ -168,7 +169,7 @@ for block in blockOrder:
 		mt = Texture(Image.open("mask.BMP"))
 		ms = TextureStimulus(texture = mt, position = (x, y), anchor = 'center')
 		mv = Viewport(screen=screen, stimuli=[ms])
-		mask = Presentation(go_duration = (0.5, 'seconds'), viewports=[mv])
+		mask = Presentation(go_duration = (mask_dur, 'seconds'), viewports=[mv])
 	else:
 
 		x = screen.size[0] / 4
@@ -181,7 +182,7 @@ for block in blockOrder:
 		ms1 = TextureStimulus(texture = mt1, position = (x, y), anchor = 'center')
 		ms2 = TextureStimulus(texture = mt2, position = (x * 3, y), anchor = 'center')
 		mv = Viewport(screen=screen, stimuli=[ms1, ms2])
-		mask = Presentation(go_duration = (0.5, 'seconds'), viewports=[mv])
+		mask = Presentation(go_duration = (mask_dur, 'seconds'), viewports=[mv])
 		
 
 	print "Beginning block now..."
@@ -247,12 +248,12 @@ for block in blockOrder:
 				v2 = Viewport(screen=screen, stimuli=[s2])
 				
 				p1 = Presentation(go_duration=(dot_duration, 'seconds'), viewports=[v1])
-				mask.go()
 				p = Presentation(go_duration=(dot_duration, 'seconds'), viewports=[v2])
-				mask.go()
 				p.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, keyFunc)]
 				p1.go()
+				mask.go()				
 				p.go()
+				mask.go()
 
 				
 				
