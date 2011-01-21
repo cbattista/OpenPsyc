@@ -140,7 +140,7 @@ strategy = None
 
 trial = 1
 
-fixText, fixCross = printWord(screen, '', 60, (255, 255, 255), h_anchor = 2.5)
+fixText, fixCross = printWord(screen, '*', 120, (255, 255, 255))
 
 print "PRESS SPACE TO START"
 
@@ -175,10 +175,10 @@ for p in problems:
 	ACC = 1
 
 	#generate texts
-	strat2 = "Please describe your strategy"
+	strat2 = "%s\n\nPlease describe your strategy" % problem
 
-	stratText, stratPort = printWord(screen, strat2, 60, (255, 255, 255), h_anchor = 1.3, v_anchor = 0.75)
-	expText, expPort = printWord(screen, problem, 60, (255, 255, 255), h_anchor = 2)
+	stratText, stratPort = printText(screen, strat2, 80, (255, 255, 255))
+	expText, expPort = printText(screen, "%s\n \n" % problem, 80, (255, 255, 255))
 
 	#BLOCK 1 - Problem & RESPONSE
 
@@ -187,7 +187,7 @@ for p in problems:
 	p.go()
 
 	#BLOCK 2 - STRATEGY SELECTION & GRADING
-	p2 = Presentation(go_duration=('forever', ), viewports=[expPort, stratPort])
+	p2 = Presentation(go_duration=('forever', ), viewports=[stratPort])
 	p2.add_controller(None, None, FunctionController(during_go_func=strategy_controller, temporal_variables = FRAMES_ABSOLUTE))
 	p2.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, key_handler)]        
 	p2.go()

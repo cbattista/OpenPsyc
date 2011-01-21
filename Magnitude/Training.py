@@ -14,9 +14,10 @@ import copy
 
 from pygame.locals import *
 import sys
+import os
 
+sys.path.append(os.path.split(os.getcwd())[0])
 
-sys.path.append('/home/cogdev/code/OpenPsyc/')
 
 import subject
 from experiments import printWord, printText
@@ -74,41 +75,12 @@ for p in problems:
 
 brightness = normalize(allnums)
 
-add_problems = []
-
-bad = False
-quit = 0
-
-#make production list
-while not quit:
-	
-	for i in range(10):
-		random.seed()
-		random.shuffle(problems)
-		add_problems += problems
-	last_five = []
-	count = 1
-	for p in add_problems:
-		if p in last_five:
-			bad = True
-			print count
-			break
-		else:	
-			if len(last_five) < 5:
-				last_five.append(p)
-			else:
-				last_five.pop(0)
-				last_five.append(p)
-
-		count += 1
-
-	if not bad:
-		quit = True
-
-bad = False
-quit = 0
+#make magnitudes whatnot
+add_problems = problems * 10
+random.shuffle(add_problems)
 
 mag_problems = problems * 10
+random.shuffle(mag_problems)
 
 #make mag/brightness list
 while not quit:
@@ -170,44 +142,17 @@ def problem_controller(f_abs):
 				p.parameters.go_duration = (0, 'frames')
 				ser.close()
 
-#strategy control, SRBox buttons
-def strategy_controller(f_abs):
-	global strategy
+#experimenter grading, space & escape
+def key_handler(event):
 	global ACC
 	global misfire
 
-	if f_abs == 1:
-		onset = time.time()
-		ser = serial.Serial(port=0, baudrate=19200)
-		ser.write('\xa0\xe0')
-		while ser.isOpen():
-			x=chr(0)
-			x = ser.read()
-			if ord(x) == 1:
-				strategy = "mem"
-				ser.close()
-				p2.parameters.go_duration = (0, 'frames')
-
-			elif ord(x) == 2:
-				strategy = "calc"
-				ser.close()
-				p2.parameters.go_duration = (0, 'frames')
-
-			elif ord(x) == 4:
-				ACC = 1
-				
-			elif ord(x) == 8:
-				ACC = 0
-
-			elif ord(x) == 16:
-				misfire = 1
-
-
-#experimenter grading, space & escape
-def key_handler(event):
-	if event.key == K_ESCAPE:
+	if event.key == K_SPACE:
+		ACC = 0
+	elif event.key == K_m:
+		misfire = 1
+	elif event.key == K_ESCAPE:
 		print "NEED A REGRADING FUNCTION HERE WOO"
-
 	elif event.key == K_q:
 		print "QUIT PROGRAM WOOO"
 		p2.parameters.go_duration = (0, 'frames')
@@ -222,7 +167,9 @@ strategy = None
 
 trial = 1
 
-fixText, fixCross = printWord(screen, '', 60, (255, 255, 255), h_anchor = 2.5)
+fixText, fixCross = printWord(screen, '*', 120, (255, 255, 255))
+errorText, errorPort = printWord(screen, 'X', 120, (1., .1, .1))
+
 
 print "PRESS SPACE TO START"
 
@@ -230,19 +177,28 @@ pause = Presentation(go_duration=('forever', ), viewports=[fixCross])
 pause.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, pause_handler)]  
 pause.go()
 
-for stim in stimList:
-		
-	if stim == "mag":
-		p = mag_problems.pop(0)
-		symbol = "|"
-		solution = str(max([n1, n2]))
-	elif stim == "add":
-		p = add_problems.pop(0)
-		symbol = "+"
-		solution = str(n1 + n2)
+problemQ = []
 
-	n1 = p[0][0]
-	n2 = p[0][1]
+while len(stimList):
+
+	if problemQ:
+		stim = problemQ[2]
+		n1 = problemQ[0]
+		n2 = problemQ[1]
+	else:
+		stim = stimList.pop(0)
+		if stim == "mag":
+			p = mag_problems.pop(0)
+			n1 = p[0][0]
+			n2 = p[0][1]
+			symbol = "  OR  "
+			solution = str(max([n1, n2]))
+		elif stim == "add":
+			p = add_problems.pop(0)
+			n1 = p[0][0]
+			n2 = p[0][1]
+			symbol = "  +  "
+			solution = str(n1 + n2)
 
 	if condition == "b":
 		i1 = problems.index(n1)
@@ -258,7 +214,7 @@ for stim in stimList:
 	subject.inputData(trial, "n1", n1)
 	subject.inputData(trial, "n2", n2)
 	subject.inputData(trial, "problem", problem)
-	subject.inputData(trail, "type", stim)
+	subject.inputData(trial, "type", stim)
 
 	#format problem
 	print "----------------------"
@@ -273,7 +229,7 @@ for stim in stimList:
 	ACC = 1
 
 
-	expText, expPort = printWord(screen, problem, 60, (255, 255, 255), h_anchor = 2)
+	expText, expPort = printWord(screen, problem, 80, (255, 255, 255))
 
 	#BLOCK 1 - Problem & RESPONSE
 
@@ -282,17 +238,19 @@ for stim in stimList:
 	p.go()
 
 	#BLOCK 2 - STRATEGY SELECTION & GRADING
-	p2 = Presentation(go_duration=('forever', ), viewports=[expPort])
-	p2.add_controller(None, None, FunctionController(during_go_func=strategy_controller, temporal_variables = FRAMES_ABSOLUTE))
+	p2 = Presentation(go_duration=(1.5, 'seconds'), viewports=[fixCross])
 	p2.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, key_handler)]        
 	p2.go()
 
+	if ACC == 0:
+		problemQ = [n1, n2, stim]
+		error = Presentation(go_duration=(1, 'seconds'), viewports=[errorPort])
+		error.go()
+	else:
+		problemQ = []
+
 	subject.inputData(trial, "misfire", misfire)
 	subject.inputData(trial, "ACC", ACC)
-
-	#blank screen
-	p3 = Presentation(go_duration=(1.5, 'seconds'), viewports=[fixCross])
-	p3.go()
 
 	trial = trial + 1
 
