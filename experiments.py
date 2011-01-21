@@ -102,12 +102,8 @@ def printText (screen, theText, fontSize, theColor):
 def showInstructions(screen,  text, textSize=60, textcolor=(255, 255, 255)):
 	#create our instruction screen
 	#load up the instruction text
-	insText = text.split("\n")
 
-	if len(insText) > 1:
-		insStim, insView = printText(screen, insText, textSize, textcolor)
-	else:
-		insSim, insView = printWord(screen, insText[0], textSize, textcolor)
+	insStim, insView = printText(screen, text, textSize, textcolor)
 
 	instructions = Presentation(go_duration=('forever',), viewports=[insView])
 
