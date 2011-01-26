@@ -73,7 +73,7 @@ for p in problems:
 	allnums.append(n1)
 	allnums.append(n2)
 
-brightness = normalize(allnums)
+brightness = normalize(copy.deepcopy(allnums))
 
 #make magnitudes whatnot
 add_problems = problems * 10
@@ -102,10 +102,12 @@ while not quit:
 
 items = ["add", "mag"]
 
+#STIMULUS TYPE AND SIDE SHUFFLER
 
-stim_shuffler = shuffler.Shuffler(items, 400, 5)
+trials = 400
+
+stim_shuffler = shuffler.Shuffler(items, trials, 5)
 stimList = stim_shuffler.shuffle()
-
 
 ###SET SCREEN
 screen = get_default_screen()
@@ -167,9 +169,11 @@ strategy = None
 
 trial = 1
 
+#STIMULI
+
+#Fixation Cross
 fixText, fixCross = printWord(screen, '*', 120, (255, 255, 255))
 errorText, errorPort = printWord(screen, 'X', 120, (1., .1, .1))
-
 
 print "PRESS SPACE TO START"
 
@@ -200,16 +204,35 @@ while len(stimList):
 			symbol = "  +  "
 			solution = str(n1 + n2)
 
-	if condition == "b":
-		i1 = problems.index(n1)
-		i2 = problems.index(n2)
-		b1 = brightness[i1]
-		b2 = brightness[i2]
+
+	if condition == "b" and stim == "mag":
+		i1 = allnums.index(n1)
+		i2 = allnums.index(n2)
+
+		indexes = [i1, i2]
+		random.shuffle(indexes)
+
+		b1 = brightness[indexes[0]]
+		b2 = brightness[indexes[1]]
+
 		problem = "%s %s %s" % (b1, symbol, b2)
+		#Make Rectangles
+		x = screen.size[0] / 4
+		y = screen.size[1] / 2
+
+		box1 = TextureStimulus(color = [b1, b1, b1], position = [x, y], size= [100, 100])
+		box2 = TextureStimulus(color = [b2, b2, b2], position = [x * 3, y], size= [100, 100])
+		expPort = Viewport(screen=screen, stimuli=[box1, box2])
+
 
 	else:
-		problem = "%s %s %s" % (n1, symbol, n2)
+		numbers = [n1, n2]
+		random.shuffle(numbers)
+		
+		problem = "%s %s %s" % (numbers[0], symbol, numbers[1])
 
+
+		expText, expPort = printWord(screen, problem, 80, (255, 255, 255))
 
 	subject.inputData(trial, "n1", n1)
 	subject.inputData(trial, "n2", n2)
@@ -229,7 +252,7 @@ while len(stimList):
 	ACC = 1
 
 
-	expText, expPort = printWord(screen, problem, 80, (255, 255, 255))
+	
 
 	#BLOCK 1 - Problem & RESPONSE
 
