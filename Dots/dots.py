@@ -27,23 +27,33 @@ except:
 sub = subject.Subject(number, experiment = "dots")
 
 
-#SETTINGS
-
-blocks = ["sequential", "paired", "overlapping"]
-
-breakText = "Time for a break.\nPRESS SPACE TO CONTINUE."
-break_trial = 60
+###BEGIN SETTINGS
 
 #total trials
 trials = 240
 
 #of the total trials, how many do you want to run (good for testing), put -1 for all
-subtrials = -1
+subtrials = 5
+
+#blocks to be displyaed
+blocks = ["sequential", "paired", "overlapping"]
+
+#the text presented when a break is given
+breakText = "Time for a break.\nPRESS SPACE TO CONTINUE."
+#take a break after this many trials
+break_trial = 60
 
 #total duration of each dot array, in seconds
 dot_duration = 0.75
 #total duration of each mask
 mask_dur = 0.5
+
+#size of fixation cross
+crossSize = 80
+#duration of fixation cross
+cross_duration = .75
+
+###END SETTINGS
 
 if os.path.exists("cb.pck"):
 	f = open("cb.pck")
@@ -78,7 +88,7 @@ def keyFunc(event):
 	
 	correct = cDict[color]
 
-	RT = p.time_sec_since_go
+	RT = p.time_sec_since_go * 1000
 	
 	sub.inputData(trial, "RT", RT)
 	
@@ -101,13 +111,17 @@ def keyFunc(event):
 
 #fixation pause
 #show blank screen
-fixText, fixCross = experiments.printWord(screen, '+', 60, (0, 0, 0))
-pause = Presentation(go_duration=(0.5, 'seconds'), viewports=[fixCross])
+#add response handlers
+
+fixText, fixCross = experiments.printWord(screen, '+', crossSize, (0, 0, 0))
+pause = Presentation(go_duration=(cross_duration, 'seconds'), viewports=[fixCross])
 
 blockIns = {}
 blockIns['paired'] = "The groups will both appear at the same time."
 blockIns['sequential'] = "The groups will appear one after the other."
 blockIns['overlapping'] = "The groups will both appear at the same time."
+
+blockOrder = ["paired"]
 
 for block in blockOrder:
 
@@ -134,8 +148,8 @@ for block in blockOrder:
 
 
 	print "entering block %s" % block
-	ratios = shuffler.Condition([.83, .8, .75, .5, .33, .25], "ratio", 6)
-	seeds = shuffler.Condition([4, 5, 6, 7, 8], "seed", 6)
+	ratios = shuffler.Condition([.9, .75, .66, .5, .33, .25], "ratio", 6)
+	seeds = shuffler.Condition([6, 7, 8, 9, 10], "seed", 6)
 	size = shuffler.Condition(["con", "incon"], "size", 5)
 	exemplars = shuffler.Condition([1, 2, 3, 4], "exemplar", 20)
 		
@@ -156,10 +170,11 @@ for block in blockOrder:
 	csShuffler = shuffler.MultiShuffler([sides, colors], trials)
 	csList = csShuffler.shuffle()
 	
+	"""
 	print "loading pause durations..."
 	pauseTimes = [.250, .350, .450, .550, .650, .750] * 40
 	random.shuffle(pauseTimes)
-
+	"""
 
 	print "creating stimulus displays windows..."
 	if block == "overlapping" or block == "sequential":
@@ -188,9 +203,7 @@ for block in blockOrder:
 	print "Beginning block now..."
 	experiments.showInstructions(screen, instructionText, textcolor=(0, 0, 0))
 
-	for stim, cs, pauseTime in zip(stimList[:subtrials], csList[:subtrials], pauseTimes[:subtrials]):
-		pause.parameters.go_duration = (pauseTime, 'seconds')
-		pause.go()
+	for stim, cs in zip(stimList[:subtrials], csList[:subtrials]):
 
 		ratio = getattr(stim, "ratio")
 		n1 = getattr(stim, "seed")
@@ -213,7 +226,6 @@ for block in blockOrder:
 		sub.inputData(trial, "largecolor", cDict[color])
 		sub.inputData(trial, "yellowButton", yellowB)
 		sub.inputData(trial, "blueButton", blueB)
-		sub.inputData(trial, "pauseTime", pauseTime)		
 
 		if block == "overlapping":
 			fname = "%s_%s_%s_%s_%s_OL.bmp" % (ratio, n1, color, size, exemplar)
@@ -251,7 +263,7 @@ for block in blockOrder:
 				p = Presentation(go_duration=(dot_duration, 'seconds'), viewports=[v2])
 				p.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, keyFunc)]
 				p1.go()
-				mask.go()				
+				#mask.go()				
 				p.go()
 				mask.go()
 
@@ -267,6 +279,9 @@ for block in blockOrder:
 				p.go()
 
 				mask.go()
+
+		#fixation cross
+		pause.go()
 
 		trial += 1
 		sub.printData()
