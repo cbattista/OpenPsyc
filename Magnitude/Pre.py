@@ -33,7 +33,7 @@ number = str(myArgs[1])
 try:
 	trials = int(myArgs[2])
 except:
-	trials = 3
+	trials = 20
 
 #create subject
 subject = subject.Subject(number, experiment = "pre")
@@ -122,6 +122,8 @@ def pause_handler(event):
 		print "BEGINNING EXPERIMENT"
 		pause.parameters.go_duration = (0, 'frames')
 
+#maximum cycles of the problem search algorithm
+maxCycles = 100000
 
 #problem adjustment values
 add = [4,5,6,7]
@@ -250,6 +252,16 @@ while len(memProblems) < trials or len(calcProblems) < trials:
 			if ns not in previousProblems:
 				badProblem = False
 
+
+			if abs(n1 - n2) <= 3:
+				badProblem = True
+				if badCycles == (maxCycles - 1):
+					n2 += 3
+					badProblem = False
+
+			if n1 == n2:
+				badProblem = True
+
 			if sum(ns) > 100:
 				n1 = n1 / 2
 				n2 = n2 /2
@@ -257,7 +269,7 @@ while len(memProblems) < trials or len(calcProblems) < trials:
 
 			badCycles += 1
 			#if we are stuck in an infinite loop
-			if badCycles >= 100000:
+			if badCycles >= maxCycles:
 				print "Breaking loop"
 				badProblem = False
 
