@@ -33,7 +33,7 @@ sub = subject.Subject(number, experiment = "dots")
 trials = 240
 
 #of the total trials, how many do you want to run (good for testing), put -1 for all
-subtrials = 5
+subtrials = -1
 
 #blocks to be displyaed
 blocks = ["sequential", "paired", "overlapping"]
@@ -120,8 +120,6 @@ blockIns = {}
 blockIns['paired'] = "The groups will both appear at the same time."
 blockIns['sequential'] = "The groups will appear one after the other."
 blockIns['overlapping'] = "The groups will both appear at the same time."
-
-blockOrder = ["paired"]
 
 for block in blockOrder:
 
