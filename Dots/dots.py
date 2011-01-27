@@ -45,6 +45,7 @@ break_trial = 60
 
 #total duration of each dot array, in seconds
 dot_duration = 0.75
+
 #total duration of each mask
 mask_dur = 0.5
 
@@ -85,36 +86,60 @@ def keyFunc(event):
 	global yellowB
 	global blueB
 	global trial
-	
-	correct = cDict[color]
+	global block
+	global side	
+	global pressed
 
 	RT = p.time_sec_since_go * 1000
+
+	correct = cDict[color]
 	
 	sub.inputData(trial, "RT", RT)
 	
-	if event.key == pygame.locals.K_LCTRL:
-		if yellowB == "Left CTRL" and correct == "yellow":
-			sub.inputData(trial, "ACC", 1)
-		elif blueB == "Left CTRL" and correct == "blue":
-			sub.inputData(trial, "ACC", 1)
-		else:
-			sub.inputData(trial, "ACC", 0)
-	elif event.key == pygame.locals.K_RCTRL:
-		if yellowB == "Right CTRL" and correct == "yellow":
-			sub.inputData(trial, "ACC", 1)
-		elif blueB == "Right CTRL" and correct == "blue":
-			sub.inputData(trial, "ACC", 1)
-		else:
-			sub.inputData(trial, "ACC", 0)
+	if not pressed:
 
-	p.parameters.go_duration = (0.1, 'seconds')
+		if block == "paired":
+
+			if event.key == pygame.locals.K_LCTRL:
+				if side == "large":
+					sub.inputData(trial, "ACC", 1)
+				else:
+					sub.inputData(trial, "ACC", 0)
+			elif event.key == pygame.locals.K_RCTRL:
+				if side == "large":
+					sub.inputData(trial, "ACC", 0)
+				else:
+					sub.inputData(trial, "ACC", 1)
+
+		else:
+
+			if event.key == pygame.locals.K_LCTRL:
+				if yellowB == "Left CTRL" and correct == "yellow":
+					sub.inputData(trial, "ACC", 1)
+				elif blueB == "Left CTRL" and correct == "blue":
+					sub.inputData(trial, "ACC", 1)
+				else:
+					sub.inputData(trial, "ACC", 0)
+			elif event.key == pygame.locals.K_RCTRL:
+				if yellowB == "Right CTRL" and correct == "yellow":
+					sub.inputData(trial, "ACC", 1)
+				elif blueB == "Right CTRL" and correct == "blue":
+					sub.inputData(trial, "ACC", 1)
+				else:
+					sub.inputData(trial, "ACC", 0)
+
+	else:
+		sub.inputData(trial, "ACC", 2)
+
+	pressed = True
+
 
 #fixation pause
-#show blank screen
 #add response handlers
 
 fixText, fixCross = experiments.printWord(screen, '+', crossSize, (0, 0, 0))
 pause = Presentation(go_duration=(cross_duration, 'seconds'), viewports=[fixCross])
+pause.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, keyFunc)]
 
 blockIns = {}
 blockIns['paired'] = "The groups will both appear at the same time."
@@ -142,7 +167,10 @@ for block in blockOrder:
 	blueB = col[1]
 
 	
-	instructionText = "In this experiment you will see 2 groups of dots.\n%s\n  Each group will be either yellow or blue.  Your job is to choose which group has more dots in it.\n\nPress %s for yellow.\nPress %s for blue.\n\nPRESS SPACE TO CONTINUE." % (blockIns[block], yellowB, blueB)
+	if block == "paired":
+		instructionText = "In this stage you will see 2 groups of dots.\n%s\n  Press LEFT CTRL when there are more dots on the left side of the screen.\n  Press RIGHT CTRL when there are more dots on the right side of the screen.\n\nPRESS SPACE TO CONTINUE." % (blockIns[block])
+	else:
+		instructionText = "In this stage you will see 2 groups of dots.\n%s\n  Each group will be either yellow or blue.  Your job is to choose which group has more dots in it.\n\nPress %s for yellow.\nPress %s for blue.\n\nPRESS SPACE TO CONTINUE." % (blockIns[block], yellowB, blueB)	 
 
 
 	print "entering block %s" % block
@@ -183,6 +211,7 @@ for block in blockOrder:
 		ms = TextureStimulus(texture = mt, position = (x, y), anchor = 'center')
 		mv = Viewport(screen=screen, stimuli=[ms])
 		mask = Presentation(go_duration = (mask_dur, 'seconds'), viewports=[mv])
+		mask.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, keyFunc)]
 	else:
 
 		x = screen.size[0] / 4
@@ -196,16 +225,26 @@ for block in blockOrder:
 		ms2 = TextureStimulus(texture = mt2, position = (x * 3, y), anchor = 'center')
 		mv = Viewport(screen=screen, stimuli=[ms1, ms2])
 		mask = Presentation(go_duration = (mask_dur, 'seconds'), viewports=[mv])
-		
+		mask.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, keyFunc)]
 
 	print "Beginning block now..."
 	experiments.showInstructions(screen, instructionText, textcolor=(0, 0, 0))
 
-	for stim, cs in zip(stimList[:subtrials], csList[:subtrials]):
+	if subtrials == -1:
+		stimList = stimList
+		csList = csList
+	else:
+		stimList = stimList[:subtrials]
+		csList = stimList[:subtrials]
+
+
+	for stim, cs in zip(stimList, csList):
+
+		pressed = False
 
 		ratio = getattr(stim, "ratio")
 		n1 = getattr(stim, "seed")
-		n2 = int(n1 * 1/ratio)
+		n2 = int(round(n1 * 1/ratio, 0))
 		size = getattr(stim, "size")
 		exemplar = getattr(stim, "exemplar")
 		
@@ -261,7 +300,6 @@ for block in blockOrder:
 				p = Presentation(go_duration=(dot_duration, 'seconds'), viewports=[v2])
 				p.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, keyFunc)]
 				p1.go()
-				#mask.go()				
 				p.go()
 				mask.go()
 
@@ -275,7 +313,6 @@ for block in blockOrder:
 				p = Presentation(go_duration=(dot_duration, 'seconds'), viewports=[v])
 				p.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, keyFunc)]
 				p.go()
-
 				mask.go()
 
 		#fixation cross
@@ -285,5 +322,5 @@ for block in blockOrder:
 		sub.printData()
 
 		if trial % break_trial == 0 and trial != trials:
-			experiments.showInstructions(screen, breakText)
+			experiments.showInstructions(screen, breakText, textcolor = [0, 0, 0])
 
