@@ -234,11 +234,13 @@ for block in blockOrder:
 		stimList = stimList
 		csList = csList
 	else:
-		stimList = stimList[:subtrials]
-		csList = stimList[:subtrials]
+		stimList = stimList[0:subtrials]
+		csList = csList[0:subtrials]
 
 
 	for stim, cs in zip(stimList, csList):
+		print cs
+
 
 		pressed = False
 
@@ -318,9 +320,11 @@ for block in blockOrder:
 		#fixation cross
 		pause.go()
 
+		if trial % break_trial == 0 and trial != trials:
+			print trial, "BREAK TIME"
+			experiments.showInstructions(screen, breakText, textcolor = [0, 0, 0])
+
 		trial += 1
 		sub.printData()
 
-		if trial % break_trial == 0 and trial != trials:
-			experiments.showInstructions(screen, breakText, textcolor = [0, 0, 0])
 
