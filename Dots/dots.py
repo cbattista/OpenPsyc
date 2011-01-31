@@ -1,4 +1,6 @@
+#!/usr/bin/env python
 #dots.py
+
 
 import sys
 import os
@@ -9,6 +11,8 @@ import random
 from VisionEgg.Textures import *
 from VisionEgg.Core import *
 from VisionEgg.FlowControl import TIME_INDEPENDENT
+from VisionEgg.FlowControl import Presentation, FunctionController, TIME_SEC_ABSOLUTE, FRAMES_ABSOLUTE
+
 
 sys.path.append(os.path.split(os.getcwd())[0])
 
@@ -48,12 +52,13 @@ dot_duration = 0.75
 
 #total duration of each mask
 mask_dur = 0.5
+mask_img = Image.open("mask.BMP")
 
 #size of fixation cross
 crossSize = 80
 #duration of fixation cross
-cross_duration = .75
-
+cross_duration = .750
+ 
 ###END SETTINGS
 
 if os.path.exists("cb.pck"):
@@ -77,9 +82,75 @@ screen.parameters.bgcolor = (.52, .51, .52)
 
 pygame.init()
 
+fixText, fixCross = experiments.printWord(screen, '+', crossSize, (0, 0, 0))
+
 trial = 1
+
+#HANDLERS
+
+def put_image_sequential(t_abs):
+	global phase
+	global start
+
+	if not phase:
+		start = t_abs
+		phase = "dots1"
+
+	t = t_abs - start
+
+
+	if t >= dot_duration and phase == "dots1":
+		texture_object.put_sub_image(Image.open(os.path.join(stimLib,fname2)))
+		phase = "dots2"
+
+	elif t >= (dot_duration * 2) and phase == "dots2":
+		texture_object.put_sub_image(mask_img)
+		phase = "mask"
+	elif t >= (dot_duration * 2 + mask_dur) and phase == "mask":
+		p.parameters.viewports = [fixCross]
+		phase = "cross"
+	elif t >= (dot_duration * 2 + mask_dur + cross_duration):
+		p.parameters.go_duration = [0, 'frames']
+
+def put_image_dual(t_abs):
+	global phase
+	global start
+
+	if not phase:
+		start = t_abs
+		phase = "dots"
+
+	t = t_abs - start
+
+	if t >= dot_duration and phase == "dots":
+		texture_object1.put_sub_image(mask_img)
+		texture_object2.put_sub_image(mask_img)
+		phase = "mask"
+	elif t >= (dot_duration + mask_dur) and phase == "mask":
+		p.parameters.viewports = [fixCross]
+		phase = "cross"
+	elif t >= (dot_duration + mask_dur + cross_duration):
+		p.parameters.go_duration = (0, 'frames')
+
+def put_image_overlapping(t_abs):
+	global phase
+	global start
 	
-	
+	if not phase:
+		start = t_abs
+		phase = "dots"
+
+	t = t_abs - start
+
+	if t >= dot_duration and phase == "dots":
+		texture_object.put_sub_image(mask_img)
+		phase = "mask"
+	elif t >= (dot_duration + mask_dur) and phase == "mask":
+		p.parameters.viewports = [fixCross]
+		phase = "cross"
+	elif t >= (dot_duration + mask_dur + cross_duration):
+		p.parameters.go_duration = (0, 'frames')
+
 def keyFunc(event):
 	global color
 	global cDict
@@ -91,6 +162,9 @@ def keyFunc(event):
 	global pressed
 
 	RT = p.time_sec_since_go * 1000
+
+	if block == "sequential":
+		RT-= (dot_duration * 1000)
 
 	correct = cDict[color]
 	
@@ -207,25 +281,10 @@ for block in blockOrder:
 		x = screen.size[0] / 2
 		y = screen.size[1] / 2
 
-		mt = Texture(Image.open("mask.BMP"))
-		ms = TextureStimulus(texture = mt, position = (x, y), anchor = 'center')
-		mv = Viewport(screen=screen, stimuli=[ms])
-		mask = Presentation(go_duration = (mask_dur, 'seconds'), viewports=[mv])
-		mask.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, keyFunc)]
 	else:
 
 		x = screen.size[0] / 4
 		y = screen.size[1] / 2
-
-		print x
-
-		mt1 = Texture(Image.open("mask.BMP"))
-		mt2 = Texture(Image.open("mask.BMP"))
-		ms1 = TextureStimulus(texture = mt1, position = (x, y), anchor = 'center')
-		ms2 = TextureStimulus(texture = mt2, position = (x * 3, y), anchor = 'center')
-		mv = Viewport(screen=screen, stimuli=[ms1, ms2])
-		mask = Presentation(go_duration = (mask_dur, 'seconds'), viewports=[mv])
-		mask.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, keyFunc)]
 
 	print "Beginning block now..."
 	experiments.showInstructions(screen, instructionText, textcolor=(0, 0, 0))
@@ -239,9 +298,6 @@ for block in blockOrder:
 
 
 	for stim, cs in zip(stimList, csList):
-		print cs
-
-
 		pressed = False
 
 		ratio = getattr(stim, "ratio")
@@ -267,17 +323,18 @@ for block in blockOrder:
 		sub.inputData(trial, "blueButton", blueB)
 
 		if block == "overlapping":
+			phase = ""
 			fname = "%s_%s_%s_%s_%s_OL.bmp" % (ratio, n1, color, size, exemplar)
 						
 			t = Texture(Image.open(os.path.join(stimLib, fname)))
 			s = TextureStimulus(texture = t, position = (x, y), anchor = 'center')
+			texture_object = s.parameters.texture.get_texture_object()
 			v = Viewport(screen=screen, stimuli=[s])
-			p = Presentation(go_duration = (dot_duration, 'seconds'), viewports=[v])
+			p = Presentation(go_duration = ('forever', ), viewports=[v])
+			p.add_controller(None, None, FunctionController(during_go_func=put_image_overlapping, temporal_variables = TIME_SEC_ABSOLUTE))
 			p.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, keyFunc)]
 			p.go()
-			
-			mask.go()
-		
+					
 		else:
 			if side == "large":
 				fname1 = "%s_%s_%s_%s_%s_S2.bmp" % (ratio, n1, color, size, exemplar)
@@ -289,36 +346,34 @@ for block in blockOrder:
 			####
 			t1 = Texture(Image.open(os.path.join(stimLib,fname1)))
 			t2 = Texture(Image.open(os.path.join(stimLib,fname2)))
+			
 
 			if block == "sequential":
-				s1 = TextureStimulus(texture = t1, position = (x, y), anchor = 'center')
-				s2 = TextureStimulus(texture = t2, position = (x, y), anchor = 'center')	
+				phase = ""
+				s = TextureStimulus(texture = t1, position = (x, y), anchor = 'center')
+				texture_object = s.parameters.texture.get_texture_object()				
 
-				#create viewports
-				v1 = Viewport(screen=screen, stimuli=[s1])
-				v2 = Viewport(screen=screen, stimuli=[s2])
+				v = Viewport(screen=screen, stimuli=[s])
 				
-				p1 = Presentation(go_duration=(dot_duration, 'seconds'), viewports=[v1])
-				p = Presentation(go_duration=(dot_duration, 'seconds'), viewports=[v2])
+				p = Presentation(go_duration=('forever', ), viewports=[v])
+				p.add_controller(None, None, FunctionController(during_go_func=put_image_sequential, temporal_variables = TIME_SEC_ABSOLUTE))
 				p.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, keyFunc)]
-				p1.go()
 				p.go()
-				mask.go()
 
-				
-				
 			else:
+				phase = ""
 				s1 = TextureStimulus(texture = t1, position = (x, y), anchor = 'center')
 				s2 = TextureStimulus(texture = t2, position = (x * 3, y), anchor = 'center')	
 
+				texture_object1 = s1.parameters.texture.get_texture_object()
+				texture_object2 = s2.parameters.texture.get_texture_object()
+
 				v = Viewport(screen=screen, stimuli=[s1,s2])
-				p = Presentation(go_duration=(dot_duration, 'seconds'), viewports=[v])
+				p = Presentation(go_duration=('forever', ), viewports=[v])
+				p.add_controller(None, None, FunctionController(during_go_func=put_image_dual, temporal_variables = TIME_SEC_ABSOLUTE))
 				p.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, keyFunc)]
 				p.go()
-				mask.go()
 
-		#fixation cross
-		pause.go()
 
 		if trial % break_trial == 0 and trial != trials:
 			print trial, "BREAK TIME"
