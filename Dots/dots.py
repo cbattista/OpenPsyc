@@ -202,6 +202,10 @@ def keyFunc(event):
 				else:
 					sub.inputData(trial, "ACC", 0)
 
+		if RT <= 0:
+			sub.inputData(trial, "ACC", 3)
+
+
 	else:
 		sub.inputData(trial, "ACC", 2)
 
@@ -212,8 +216,6 @@ def keyFunc(event):
 #add response handlers
 
 fixText, fixCross = experiments.printWord(screen, '+', crossSize, (0, 0, 0))
-pause = Presentation(go_duration=(cross_duration, 'seconds'), viewports=[fixCross])
-pause.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, keyFunc)]
 
 blockIns = {}
 blockIns['paired'] = "The groups will both appear at the same time."
@@ -259,7 +261,7 @@ for block in blockOrder:
 	cDict = {}
 	cDict["C1"] = "blue"
 	cDict["C2"] = "yellow"
-	print "loading ratio/seed/seize/exemplar order..."
+	print "loading ratio/seed/size/exemplar order..."
 	myShuffler = shuffler.MultiShuffler([ratios, seeds, size, exemplars], trials)
 	stimList = myShuffler.shuffle()
 
@@ -270,13 +272,7 @@ for block in blockOrder:
 	csShuffler = shuffler.MultiShuffler([sides, colors], trials)
 	csList = csShuffler.shuffle()
 	
-	"""
-	print "loading pause durations..."
-	pauseTimes = [.250, .350, .450, .550, .650, .750] * 40
-	random.shuffle(pauseTimes)
-	"""
-
-	print "creating stimulus displays windows..."
+	print "configuring stimulus displays windows..."
 	if block == "overlapping" or block == "sequential":
 		x = screen.size[0] / 2
 		y = screen.size[1] / 2
