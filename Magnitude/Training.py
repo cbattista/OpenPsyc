@@ -75,30 +75,10 @@ for p in problems:
 
 brightness = normalize(copy.deepcopy(allnums))
 
-#make magnitudes whatnot
-add_problems = problems * 10
-random.shuffle(add_problems)
-
-mag_problems = problems * 10
-random.shuffle(mag_problems)
-
-#make mag/brightness list
-while not quit:
-	random.shuffle(mag_problems)
-	last_five = []
-	for p in mag_problems:
-		if p in last_five:
-			bad = True
-			break
-
-		if len(last_five) < 5:
-			last_five.append(p)
-		else:
-			last_five.pop(0)
-			last_five.append(p)
-
-	if not bad:
-		quit = True
+#make magnitudes and whatnot
+ls = shuffler.ListShuffler(range(len(problems)), 200, 5)
+add_problems = ls.shuffle()
+mag_problems = ls.shuffle()
 
 items = ["add", "mag"]
 
@@ -192,13 +172,13 @@ while len(stimList):
 	else:
 		stim = stimList.pop(0)
 		if stim == "mag":
-			p = mag_problems.pop(0)
+			p = problems[mag_problems.pop(0)]
 			n1 = p[0][0]
 			n2 = p[0][1]
 			symbol = "  OR  "
 			solution = str(max([n1, n2]))
 		elif stim == "add":
-			p = add_problems.pop(0)
+			p = problems[add_problems.pop(0)]
 			n1 = p[0][0]
 			n2 = p[0][1]
 			symbol = "  +  "
