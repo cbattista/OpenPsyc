@@ -20,8 +20,8 @@ for r in ratios:
 			n2 = int(round(s * 1./r, 0))
 			dotMaster.dotArranger([n1, n2])
 
-			
 			name = "%s_%s_C1_con_%s" % (r, n1, rep)
+			dotMaster.colors = [(255, 255, 16), (0, 4, 214)]
 		
 			dotMaster.drawOverlay(name)
 			dotMaster.drawSingle(name)
@@ -45,7 +45,10 @@ for r in ratios:
 			n1 = s
 			n2 = int(s * 1/r)
 			dotMaster.dotArranger([n1, n2])
+
 			name = "%s_%s_C1_incon_%s" % (r, n1, rep)		
+			dotMaster.colors = [(255, 255, 16), (0, 4, 214)]
+
 			dotMaster.drawOverlay(name)
 			dotMaster.drawSingle(name)
 
