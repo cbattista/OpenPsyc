@@ -324,4 +324,39 @@ class Shuffler:
 					listgood = 1
 				else:
 					pass
-			
+
+#a class to make a relatively balanced stimulus list from a set of items, which forbids repeats of item i within r items
+class ListShuffler():
+	def __init__(self, items, length, repeats=3):
+		if length % len(items):
+			raise Exception("hey meathead I can't make a list of %s things out of %s items" % (length, len(items)))			
+		else:
+			self.items = items
+			self.length = length
+			self.iters = length / len(items)
+			self.repeats = repeats
+	
+	def shuffle(self):
+		self.finalList = []
+		for i in range(self.iters):
+			items = copy.deepcopy(self.items)
+			random.shuffle(items)
+			if not i:
+				self.finalList+=items
+			else:
+				quit = False
+				while not quit:
+					bad = False				
+					for r in range(1, self.repeats):
+						my_slice = self.finalList[-r:] + items[:self.repeats-r]
+						if len(set(my_slice)) != self.repeats:
+							bad = True
+					if not bad:
+						self.finalList+= items
+						quit = True
+					else:
+						items = copy.deepcopy(self.items)
+						random.shuffle(items)
+
+		return self.finalList
+
