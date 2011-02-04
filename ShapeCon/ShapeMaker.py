@@ -14,27 +14,6 @@ reps = [1,2,3,4,5,6]
 
 for shape in ['square', 'triangle']:
 	for sm, smm in zip(['area', 'perimeter'], [area, perimeter]):
-		###DO THE AREA CONTROLLED STIMULI
-		shapeMaster = ShapeMaster(box, [smm], shape=shape, sizemeasure = sm, colors = colors, bgcolor = bgcolor)
-		for r in ratios:
-			for s in seeds:
-				print r, s
-				for rep in reps:
-					n1 = s
-					n2 = int(round(s * 1./r, 0))
-					shapeMaster.shapeArranger([n1], n1, n2, r)
-
-					name = "%s_%s_%s_con_%s" % (sm, r, n1, rep)
-		
-					shapeMaster.drawSingle(name)
-
-					shapeMaster.shapeArranger([n2], n1, n2, r)
-
-					name = "%s_%s_%s_con_%s" % (sm, r, n2, rep)
-
-					shapeMaster.drawSingle(name)
-
-
 
 		###DO THE AREA UNCONTROLLED STIMULI
 		for r in ratios:
@@ -47,10 +26,10 @@ for shape in ['square', 'triangle']:
 				print r, s
 				for rep in reps:
 					n1 = s
-					n2 = int(s * 1/r)
+					n2 = int(round((s * 1/r), 0))
 					shapeMaster.shapeArranger([n1], n1, n2, r)
 
-					name = "%s_%s_%s_incon_%s" % (sm, r, n1, rep)		
+					name = "%s_%s_%s_%s_%s_S1" % (sm, r, n1, n2, rep)		
 
 					shapeMaster.drawSingle(name)
 
@@ -62,7 +41,7 @@ for shape in ['square', 'triangle']:
 					n2 = int(s * 1/r)
 					shapeMaster.shapeArranger([n2], n1, n2, r)
 
-					name = "%s_%s_%s_incon_%s" % (sm, r, n2, rep)		
+					name = "%s_%s_%s_%s_%s_S2" % (sm, r, n1, n2, rep)		
 
 					shapeMaster.drawSingle(name)
 
