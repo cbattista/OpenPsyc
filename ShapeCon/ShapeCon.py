@@ -143,21 +143,23 @@ fixText, fixCross = experiments.printWord(screen, '+', crossSize, color)
 
 instructionText = "In this experiment you will see 2 groups of dots.\nPress LEFT CTRL when there are more dots on the left.\nPress RIGHT CTRL when there are more dots on the right.\n\nPRESS SPACE TO CONTINUE."	 
 
-ratios = shuffler.Condition([.9, .75, .66, .5, .33, ], "ratio", 6)
+ratios = shuffler.Condition([.9, .75, .66, .5, .33 ], "ratio", 6)
 seeds = shuffler.Condition([6, 7, 8, 9, 10, 11], "seed", 6)
-size = shuffler.Condition(["area", "perimeter"], "size", 5)
+size = shuffler.Condition(["area", "perimeter"], "size", 6)
 exemplars = shuffler.Condition([1, 2, 3, 4, 5, 6], "exemplar", 20)
-	
+shapes = shuffler.Condition(['square', 'triangle'], "shape", 7)
+
 order = ["large", "small"]
 
 print "loading ratio/seed/size/exemplar order..."
-myShuffler = shuffler.MultiShuffler([ratios, seeds, size, exemplars], trials)
+myShuffler = shuffler.MultiShuffler([ratios, seeds, size, exemplars, shapes], trials)
+
 stimList = myShuffler.shuffle()
 
 sides = shuffler.Condition(order, "sides", 5)
 
 print "loading sides order..."
-csShuffler = Shuffler(order, trials, 3)
+csShuffler = shuffler.Shuffler(order, trials, 3)
 csList = csShuffler.shuffle()
 
 x = screen.size[0] / 4
@@ -181,27 +183,26 @@ for stim, cs in zip(stimList, csList):
 	n2 = int(round(n1 * 1/ratio, 0))
 	size = getattr(stim, "size")
 	exemplar = getattr(stim, "exemplar")
+	shape = getattr(stim, "shape")
 	
 	side = cs
 	
 	sub.inputData(trial, "ACC", "NA")
 	sub.inputData(trial, "RT", "NA")
-	sub.inputData(trial, "block", block)
 	sub.inputData(trial, "ratio", ratio)
 	sub.inputData(trial, "n1", n1)
 	sub.inputData(trial, "n2", n2)
 	sub.inputData(trial, "sizectrl", size)
 	sub.inputData(trial, "exemplar", exemplar)
 	sub.inputData(trial, "order", side)
-	sub.inputData(trial, "yellowButton", yellowB)
-	sub.inputData(trial, "blueButton", blueB)
+	sub.inputData(trial, "shape", shape)
 	
 	if side == "large":
-		fname1 = "%s_%s_%s_%s_%s_S2.bmp" % (ratio, n1, color, size, exemplar)
-		fname2 = "%s_%s_%s_%s_%s_S1.bmp" % (ratio, n2, color, size, exemplar)
+		fname1 = "%s_%s_%s_%s_%s_%s_S2.bmp" % (shape, size, ratio, n1, n2, exemplar)
+		fname2 = "%s_%s_%s_%s_%s_%s_S1.bmp" % (shape, size, ratio, n1, n2, exemplar)
 	else:
-		fname1 = "%s_%s_%s_%s_%s_S1.bmp" % (ratio, n1, color, size, exemplar)
-		fname2 = "%s_%s_%s_%s_%s_S2.bmp" % (ratio, n2, color, size, exemplar)
+		fname1 = "%s_%s_%s_%s_%s_%s_S1.bmp" % (shape, size, ratio, n1, n2, exemplar)
+		fname2 = "%s_%s_%s_%s_%s_%s_S2.bmp" % (shape, size, ratio, n1, n2, exemplar)
 		
 	####
 	t1 = Texture(Image.open(os.path.join(stimLib,fname1)))
