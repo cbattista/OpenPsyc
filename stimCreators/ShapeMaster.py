@@ -142,10 +142,10 @@ class ShapeMaster:
 
 			self.areaSums = areaSums
 			self.periSums = periSums
-			area_r = float(areaSums[0]) / areaSums[1]
-			peri_r = float(periSums[0]) / periSums[1]
+			#area_r = float(areaSums[0]) / areaSums[1]
+			#peri_r = float(periSums[0]) / periSums[1]
 
-			self.size_log = "%s, %s, %s, %s, %s, %s, %s" % (self.shape, areaSums[0], areaSums[1], round(area_r, 2), periSums[0], periSums[1], round(peri_r, 2))
+			self.size_log = "%s, %s, %s" % (self.shape, areaSums, periSums)
 	
 		else:
 			print "Just what the hell do you think you're doing"
@@ -154,7 +154,7 @@ class ShapeMaster:
 		self.controlValue = False
 		return sizeList, sepShapes
 
-	def shapeArranger(self, ns):
+	def shapeArranger(self, ns, n1, n2, r):
 		#1 - place a dot box in a random location which does not overlap the edges
 		#2 - place a dot in a random location which does not overlap the edges or any other dot boxes
 		#3 - repeat until no dots are left
@@ -162,9 +162,7 @@ class ShapeMaster:
 		goodList = 0
 		breaks = 0
 
-		ratio = float(ns[0]) / float(ns[1])
-
-		self.ratio_log = "%s, %s, %s, %s" % (ns[0], ns[1], round(ratio, 2), round(1/ratio, 2))
+		self.ratio_log = "%s, %s, %s, %s" % (n1, n2, r, round(1/r, 2))
 
 		sizeList, sepShapes = self.generateLists(ns, self.control)
 		
@@ -181,8 +179,6 @@ class ShapeMaster:
 					quit = 0
 					reps = 1
 
-					print a, r, d
-
 					#if we've broken the cycle more than 10 times, we should regenerate the area list, 'cause this obviously ain't workin'
 					if breaks > 9:
 						sizeList, sepShapes = self.generateLists(ns)
@@ -194,8 +190,6 @@ class ShapeMaster:
 						reps = reps + 1
 						#if we've tried this too many times, restart the process...
 						if reps > 100000:
-							print "Arranger Reset"
-							print sizeList
 							#delete the list of boxes
 							#put the area back into the list of areas
 							shapesizes = copy.deepcopy(sizeList)
@@ -264,40 +258,29 @@ class ShapeMaster:
 
 	def drawSingle(self, name, dpi=96):
 		#obtain all the possible colors
-		cols = []
-		for d in self.shapeBoxes:
-		
-			cols.append(d[4])
 			
-		cols = set(cols)
-		cols = list(cols)
+		c = self.colors
 
-		count = 1
-		for c in cols:
-			image = Image.new("RGB", self.box, self.bgcolor)
-					
-			draw = ImageDraw.Draw(image)
-			for d in self.shapeBoxes:
-				if d[4] == c:
-					print d
-					box1 = [d[0] - d[2], d[1] - d[2], d[0] + d[2], d[1] + d[2]]
-					if self.shape == 'circle':
-						draw.ellipse(box1, fill = self.colors[d[4]])
-					elif self.shape == 'square':
-						draw.rectangle(box1, fill = self.colors[d[4]])
-					elif self.shape == 'triangle':
-						print box1
-						draw.polygon([box1[0], box1[1], box1[0], box1[3], box1[2], box1[3]], fill = self.colors[d[4]])
+		image = Image.new("RGB", self.box, self.bgcolor)
+				
+		draw = ImageDraw.Draw(image)
+		for d in self.shapeBoxes:
+			box1 = [d[0] - d[2], d[1] - d[2], d[0] + d[2], d[1] + d[2]]
+			if self.shape == 'circle':
+				draw.ellipse(box1, fill = c)
+			elif self.shape == 'square':
+				draw.rectangle(box1, fill = c)
+			elif self.shape == 'triangle':
+				draw.polygon([box1[0], box1[1], box1[0], box1[3], box1[2], box1[3]], fill = c)
 						
 					
-			del draw
+		del draw
 				
-			fname = "%s_%s_S%s.bmp" % (self.shape, name, count)
+		fname = "%s_%s.bmp" % (self.shape, name)
 
-			image.save("output/%s" % fname, "BMP", dpi=dpi)
-				
-			count+=1
-			self.printLog(fname)
+		image.save("output/%s" % fname, "BMP", dpi=dpi)
+			
+		self.printLog(fname)
 
 	def drawOverlay(self, name, dpi=96):
 		#make a left/right dot array stimulus from two groups of bounding boxes
@@ -323,7 +306,7 @@ class ShapeMaster:
 			f = open(self.logFile, "a")
 		else:
 			f = open(self.logFile, "w")
-			f.write("file,n1,n2,ratio,1/ratio,shape,area_n1,area_n2,area_ratio,per_n1,per_n2,per_ratio\n")
+			f.write("file,n1,n2,ratio,1/ratio,shape,area,per\n")
 
 		log = "%s, %s, %s" % (fname, self.ratio_log, self.size_log)
 
