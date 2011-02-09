@@ -67,13 +67,8 @@ while not quit:
 	
 	if len(fullList):
 		ns = fullList.pop()
-		if ns not in probList:
-			probList.append(ns)
+		probList.append(ns)
 	
-	else:
-		prob = "NA"
-		probList.append(prob)
-
 probList = probList[:t_num]
 
 for p in probList:
