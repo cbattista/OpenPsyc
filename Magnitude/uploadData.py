@@ -96,7 +96,9 @@ postList = []
 
 ###UNTRAINED MEM PROBLEMS
 
-result = posts.find({'strategy' : 'mem', 's_id' : int(number), 'verified' : 1})
+s = "mem"
+
+result = posts.find({'strategy' : s, 's_id' : int(number), 'verified' : 1})
 for r in result:
 	n1 = r['n1']
 	n2 = r['n2']
