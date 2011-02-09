@@ -278,8 +278,18 @@ while len(memProblems) < trials or len(calcProblems) < trials:
 	solution = str(ns[0] + ns[1])
 
 	random.shuffle(ns)
-	problem = "%s + %s" % (ns[0], ns[1])
-	subject.inputData(trial, "problem", problem)
+	ns1 = str(ns[0])
+	ns2 = str(ns[1])
+
+	problemString = "%s+%s" % (ns1, ns2)
+
+	if len(ns1) == 1:
+		ns1 = " %s" % ns1
+	if len(ns2) == 1:
+		ns2 = " %s" % ns2	
+
+	problem = "   %s\n+ %s" % (ns1, ns2)
+	subject.inputData(trial, "problem", problemString)
 
 	#default values for misfiring voice key
 	misfire = 0
@@ -291,7 +301,7 @@ while len(memProblems) < trials or len(calcProblems) < trials:
 	info = "mems: %s/%s, tmems: %s, calcs: %s/%s, tcalcs: %s, heap: %s" % (len(memProblems), trials, len(memTemp), len(calcProblems), trials, len(calcTemp), len(problemHeap))
 
 	print "-------------------------------------"
-	print "PROBLEM : %s" % problem
+	print "PROBLEM : %s" % problemString
 	print "SOLUTION : %s" % solution
 	print "STATUS : %s" % info
 	print "-------------------------------------"
