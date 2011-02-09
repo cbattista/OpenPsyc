@@ -6,6 +6,7 @@ VisionEgg.start_default_logging(); VisionEgg.watch_exceptions()
 from VisionEgg.Core import get_default_screen, Viewport
 from VisionEgg.FlowControl import Presentation, FunctionController, TIME_SEC_ABSOLUTE, FRAMES_ABSOLUTE
 from VisionEgg.Textures import *
+from VisionEgg.Text import *
 import serial
 import pickle
 import time
@@ -30,8 +31,8 @@ myArgs = sys.argv
 
 number = str(myArgs[1])
 
-#should be either "b" or "m", where b is brightness comparison, and m is magnitude comparison
-condition = str(myArgs[2])
+#should be either "r" or "m", where r is rotation comparison, and m is magnitude comparison
+comparison = str(myArgs[2])
 
 
 #create subject
@@ -55,13 +56,7 @@ for r in posts.find(q):
 	problems.append([ns, orig_strat])
 
 
-def normalize(u):
-    low  = min(u)
-    high = max(u)
-    norm = max(abs(low), high)
-    for i in range(len(u)):
-        u[i] = u[i]*(1.0/norm)
-    return u
+fontsize = 80
 
 
 #determine all ratios
@@ -73,19 +68,26 @@ for p in problems:
 	allnums.append(n1)
 	allnums.append(n2)
 
-brightness = normalize(copy.deepcopy(allnums))
+trials = 400
 
 #make magnitudes and whatnot
-ls = shuffler.ListShuffler(range(len(problems)), 200, 5)
+ls = shuffler.ListShuffler(range(len(problems)), trials/2, 5)
 add_problems = ls.shuffle()
 mag_problems = ls.shuffle()
+
+mag_angles = [15, 30, 345, 330]
+mag_sides = ["left", "right"] 
+
+
+angle_shuffler = shuffler.Shuffler(mag_angles, trials/2, 5)
+angles = angle_shuffler.shuffle()
+
+side_shuffler = shuffler.Shuffler(mag_sides, trials/2, 4)
+sides = side_shuffler.shuffle()
 
 items = ["add", "mag"]
 
 #STIMULUS TYPE AND SIDE SHUFFLER
-
-trials = 400
-
 stim_shuffler = shuffler.Shuffler(items, trials, 5)
 stimList = stim_shuffler.shuffle()
 
@@ -121,6 +123,7 @@ def problem_controller(f_abs):
 				#end signal
 				RT = offset - onset
 				subject.inputData(trial, "RT", RT)
+				time.sleep(0.75)
 				p.parameters.go_duration = (0, 'frames')
 				ser.close()
 
@@ -175,53 +178,64 @@ while len(stimList):
 			p = problems[mag_problems.pop(0)]
 			n1 = p[0][0]
 			n2 = p[0][1]
-			symbol = "  OR  "
 			solution = str(max([n1, n2]))
 		elif stim == "add":
 			p = problems[add_problems.pop(0)]
 			n1 = p[0][0]
 			n2 = p[0][1]
-			symbol = "  +  "
 			solution = str(n1 + n2)
 
 
-	if condition == "b" and stim == "mag":
-		i1 = allnums.index(n1)
-		i2 = allnums.index(n2)
 
-		indexes = [i1, i2]
-		random.shuffle(indexes)
+	numbers = [n1, n2]
+	random.shuffle(numbers)
 
-		b1 = brightness[indexes[0]]
-		b2 = brightness[indexes[1]]
-
-		problem = "%s %s %s" % (b1, symbol, b2)
-		#Make Rectangles
-		x = screen.size[0] / 4
+	if stim == "mag":
+		problemString = "%s | %s" % (numbers[0], numbers[1])
+		
+		a = angles.pop(0)
+		s = sides.pop(0)
+		x = screen.size[0] / 7
 		y = screen.size[1] / 2
 
-		box1 = TextureStimulus(color = [b1, b1, b1], position = [x, y], size= [100, 100])
-		box2 = TextureStimulus(color = [b2, b2, b2], position = [x * 3, y], size= [100, 100])
-		expPort = Viewport(screen=screen, stimuli=[box1, box2])
+		if s == "left":
+
+			ns1 = Text(text = str(n1), angle = a, anchor = 'center', position = [x * 3, y], color = [255,255,255], font_size = fontsize)
+			ns2 = Text(text = str(n2), angle = 0, anchor = 'center', position = [x * 4, y], color = [255,255,255], font_size = fontsize)
+
+		else:
+
+			ns1 = Text(text = str(n1), angle = 0, anchor = 'center', position = [x * 3, y], color = [255,255,255], font_size = fontsize)
+			ns2 = Text(text = str(n2), angle = a, anchor = 'center', position = [x * 4, y], color = [255,255,255], font_size = fontsize)
+
+
+		expPort = Viewport(screen=screen, stimuli=[ns1, ns2])
 
 
 	else:
-		numbers = [n1, n2]
-		random.shuffle(numbers)
-		
-		problem = "%s %s %s" % (numbers[0], symbol, numbers[1])
+		ns1 = str(numbers[0])
+		ns2 = str(numbers[1])
+
+		if len(ns1) == 1:
+			ns1 = " %s" % ns1
+		if len(ns2) == 1:
+			ns2 = " %s" % ns2	
+
+		problem = "   %s\n+ %s" % (ns1, ns2)
+		problemString = "%s + %s" % (numbers[0], numbers[1])
 
 
-		expText, expPort = printWord(screen, problem, 80, (255, 255, 255))
+		expText, expPort = printText(screen, problem, fontsize, (255, 255, 255))
 
+	subject.inputData(trial, "comparison", comparison)
 	subject.inputData(trial, "n1", n1)
 	subject.inputData(trial, "n2", n2)
-	subject.inputData(trial, "problem", problem)
+	subject.inputData(trial, "problem", problemString)
 	subject.inputData(trial, "type", stim)
 
 	#format problem
 	print "----------------------"
-	print "PROBLEM: %s" % problem
+	print "PROBLEM: %s" % problemString
 	print "SOLUTION: %s " % solution
 	print "----------------------"
 
