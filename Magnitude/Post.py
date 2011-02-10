@@ -152,19 +152,31 @@ for p in problems:
 		
 	n1 = p[0][0]
 	n2 = p[0][1]
-	problem = "%s + %s" % (n1, n2)
+	ns = [n1, n2]
 
+	random.shuffle(ns)
+	ns1 = str(ns[0])
+	ns2 = str(ns[1])
+
+	problemString = "%s+%s" % (ns1, ns2)
+
+	if len(ns1) == 1:
+		ns1 = " %s" % ns1
+	if len(ns2) == 1:
+		ns2 = " %s" % ns2	
+
+	problem = "   %s\n+ %s" % (ns1, ns2)
 
 	subject.inputData(trial, "n1", n1)
 	subject.inputData(trial, "n2", n2)
 	subject.inputData(trial, "trained", p[1])
 	subject.inputData(trial, "orig_strat", p[2])
-	subject.inputData(trial, "problem", problem)
+	subject.inputData(trial, "problem", problemString)
 
 	#format problem
 	solution = str(n1 + n2)
 	print "----------------------"
-	print "PROBLEM: %s" % problem
+	print "PROBLEM: %s" % problemString
 	print "SOLUTION: %s " % solution
 	print "----------------------"
 

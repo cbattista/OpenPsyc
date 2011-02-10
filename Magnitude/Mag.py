@@ -31,12 +31,8 @@ myArgs = sys.argv
 
 number = str(myArgs[1])
 
-#should be either "r" or "m", where r is rotation comparison, and m is magnitude comparison
-comparison = str(myArgs[2])
-
-
 #create subject
-subject = subject.Subject(number, experiment = "training")
+subject = subject.Subject(number, experiment = "mag_pre")
 
 #connect to db
 db = MongoAdmin("magnitude")
@@ -44,52 +40,32 @@ db = MongoAdmin("magnitude")
 #retrieve problems
 posts = db.getTable("training_sets").posts
 
-q= {}
-q['s_id'] = str(number)
-
-problems = []
-
-for r in posts.find(q):
-	ns = [r['n1'], r['n2']]
-	orig_strat = r['strategy']
-
-	problems.append([ns, orig_strat])
-
-
 fontsize = 80
+boxsize = 160
 
+trials = 20
 
-#determine all ratios
-allnums = []
-
-for p in problems:
-	n1 = p[0][0]
-	n2 = p[0][1]
-	allnums.append(n1)
-	allnums.append(n2)
-
-trials = 400
-
-#make magnitudes and whatnot
-ls = shuffler.ListShuffler(range(len(problems)), trials/2, 5)
-add_problems = ls.shuffle()
-mag_problems = ls.shuffle()
+numbers = range(1, 41)
+random.shuffle(numbers)
+n1s = numbers[:trials]
+n2s = numbers[trials:]
 
 mag_angles = [15, 30, 345, 330]
 mag_sides = ["left", "right"] 
 
 
-angle_shuffler = shuffler.Shuffler(mag_angles, trials/2, 5)
+angle_shuffler = shuffler.Shuffler(mag_angles, trials, 5)
 angles = angle_shuffler.shuffle()
 
-side_shuffler = shuffler.Shuffler(mag_sides, trials/2, 4)
+side_shuffler = shuffler.Shuffler(mag_sides, trials, 4)
 sides = side_shuffler.shuffle()
 
-items = ["add", "mag"]
 
-#STIMULUS TYPE AND SIDE SHUFFLER
-stim_shuffler = shuffler.Shuffler(items, trials, 5)
-stimList = stim_shuffler.shuffle()
+mag_problems=[]
+
+for n1, n2 in zip(n1s, n2s):
+	mag_problems.append([n1,n2])
+
 
 ###SET SCREEN
 screen = get_default_screen()
@@ -123,7 +99,6 @@ def problem_controller(f_abs):
 				#end signal
 				RT = offset - onset
 				subject.inputData(trial, "RT", RT)
-				time.sleep(0.75)
 				p.parameters.go_duration = (0, 'frames')
 				ser.close()
 
@@ -166,72 +141,45 @@ pause.go()
 
 problemQ = []
 
-while len(stimList):
+while len(mag_problems):
 
 	if problemQ:
 		stim = problemQ[2]
 		n1 = problemQ[0]
 		n2 = problemQ[1]
 	else:
-		stim = stimList.pop(0)
-		if stim == "mag":
-			p = problems[mag_problems.pop(0)]
-			n1 = p[0][0]
-			n2 = p[0][1]
-			solution = str(max([n1, n2]))
-		elif stim == "add":
-			p = problems[add_problems.pop(0)]
-			n1 = p[0][0]
-			n2 = p[0][1]
-			solution = str(n1 + n2)
+		p = mag_problems.pop(0)
+		n1 = p[0]
+		n2 = p[1]
+		symbol = "  OR  "
+		solution = str(max([n1, n2]))
 
-
+	#Make Rectangles and numbers
+	x = screen.size[0] / 4
+	y = screen.size[1] / 2
 
 	numbers = [n1, n2]
 	random.shuffle(numbers)
 
-	if stim == "mag":
-		problemString = "%s | %s" % (numbers[0], numbers[1])
-		
-		a = angles.pop(0)
-		s = sides.pop(0)
-		x = screen.size[0] / 7
-		y = screen.size[1] / 2
+	problemString = "%s | %s" % (numbers[0], numbers[1])
+	
+	a = angles.pop(0)
+	s = sides.pop(0)
+	x = screen.size[0] / 7
+	y = screen.size[1] / 2
 
-		if s == "left":
+	if s == "left":
 
-			ns1 = Text(text = str(n1), angle = a, anchor = 'center', position = [x * 3, y], color = [255,255,255], font_size = fontsize)
-			ns2 = Text(text = str(n2), angle = 0, anchor = 'center', position = [x * 4, y], color = [255,255,255], font_size = fontsize)
-
-		else:
-
-			ns1 = Text(text = str(n1), angle = 0, anchor = 'center', position = [x * 3, y], color = [255,255,255], font_size = fontsize)
-			ns2 = Text(text = str(n2), angle = a, anchor = 'center', position = [x * 4, y], color = [255,255,255], font_size = fontsize)
-
-
-		expPort = Viewport(screen=screen, stimuli=[ns1, ns2])
-
+		ns1 = Text(text = str(n1), angle = a, anchor = 'center', position = [x * 3, y], color = [255,255,255], font_size = fontsize)
+		ns2 = Text(text = str(n2), angle = 0, anchor = 'center', position = [x * 4, y], color = [255,255,255], font_size = fontsize)
 
 	else:
-		ns1 = str(numbers[0])
-		ns2 = str(numbers[1])
 
-		if len(ns1) == 1:
-			ns1 = " %s" % ns1
-		if len(ns2) == 1:
-			ns2 = " %s" % ns2	
-
-		problem = "   %s\n+ %s" % (ns1, ns2)
-		problemString = "%s + %s" % (numbers[0], numbers[1])
+		ns1 = Text(text = str(n1), angle = 0, anchor = 'center', position = [x * 3, y], color = [255,255,255], font_size = fontsize)
+		ns2 = Text(text = str(n2), angle = a, anchor = 'center', position = [x * 4, y], color = [255,255,255], font_size = fontsize)
 
 
-		expText, expPort = printText(screen, problem, fontsize, (255, 255, 255))
-
-	subject.inputData(trial, "comparison", comparison)
-	subject.inputData(trial, "n1", n1)
-	subject.inputData(trial, "n2", n2)
-	subject.inputData(trial, "problem", problemString)
-	subject.inputData(trial, "type", stim)
+	expPort = Viewport(screen=screen, stimuli=[ns1, ns2])
 
 	#format problem
 	print "----------------------"
@@ -244,9 +192,6 @@ while len(stimList):
 	#default values for misfiring voice key
 	misfire = 0
 	ACC = 1
-
-
-	
 
 	#BLOCK 1 - Problem & RESPONSE
 
@@ -278,7 +223,7 @@ subject.printData()
 
 fileName = subject.fname
 dbName = "magnitude"
-tableName = "training"
+tableName = "mag_pre"
 
 reader = ReadTable(fileName = fileName, dbName=dbName, tableName = tableName, clear=False)
 
