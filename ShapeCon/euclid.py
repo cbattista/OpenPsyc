@@ -35,7 +35,7 @@ def triangleRadius(size, sizemeasure):
 	if sizemeasure == 'area':
 		return ((size * 2) ** 0.5) / 2
 	elif sizemeasure == 'perimeter':
-		return size / (8 ** 0.5 * 4)
+		return size / (4 + (8 ** 0.5))
 
 euclid = {'square':{}, 'circle':{}, 'triangle':{}}
 euclid['square']['area'] = lambda r: (r*2) ** 2
