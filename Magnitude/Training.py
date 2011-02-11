@@ -22,7 +22,7 @@ sys.path.append(os.path.split(os.getcwd())[0])
 
 import subject
 from experiments import printWord, printText
-from mongoTools import MongoAdmin
+from mongoTools import MongoAdmin, ReadTable
 import shuffler
 
 
@@ -84,6 +84,9 @@ angles = angle_shuffler.shuffle()
 
 side_shuffler = shuffler.Shuffler(mag_sides, trials/2, 4)
 sides = side_shuffler.shuffle()
+
+big_shuffler = shuffler.Shuffler(mag_sides, trials/2, 4)
+bigs = big_shuffler.shuffle()
 
 items = ["add", "mag"]
 
@@ -195,18 +198,26 @@ while len(stimList):
 		
 		a = angles.pop(0)
 		s = sides.pop(0)
+		bs = bigs.pop(0)
 		x = screen.size[0] / 7
 		y = screen.size[1] / 2
 
+		if bs == "left":
+			my_n1 = n1
+			my_n2 = n2
+		else:
+			my_n1 = n2
+			my_n2 = n1
+
 		if s == "left":
 
-			ns1 = Text(text = str(n1), angle = a, anchor = 'center', position = [x * 3, y], color = [255,255,255], font_size = fontsize)
-			ns2 = Text(text = str(n2), angle = 0, anchor = 'center', position = [x * 4, y], color = [255,255,255], font_size = fontsize)
+			ns1 = Text(text = str(my_n1), angle = a, anchor = 'center', position = [x * 3, y], color = [255,255,255], font_size = fontsize)
+			ns2 = Text(text = str(my_n2), angle = 0, anchor = 'center', position = [x * 4, y], color = [255,255,255], font_size = fontsize)
 
 		else:
 
-			ns1 = Text(text = str(n1), angle = 0, anchor = 'center', position = [x * 3, y], color = [255,255,255], font_size = fontsize)
-			ns2 = Text(text = str(n2), angle = a, anchor = 'center', position = [x * 4, y], color = [255,255,255], font_size = fontsize)
+			ns1 = Text(text = str(my_n1), angle = 0, anchor = 'center', position = [x * 3, y], color = [255,255,255], font_size = fontsize)
+			ns2 = Text(text = str(my_n2), angle = a, anchor = 'center', position = [x * 4, y], color = [255,255,255], font_size = fontsize)
 
 
 		expPort = Viewport(screen=screen, stimuli=[ns1, ns2])
@@ -255,7 +266,7 @@ while len(stimList):
 	p.go()
 
 	#BLOCK 2 - STRATEGY SELECTION & GRADING
-	p2 = Presentation(go_duration=(1.5, 'seconds'), viewports=[fixCross])
+	p2 = Presentation(go_duration=(1.0, 'seconds'), viewports=[fixCross])
 	p2.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, key_handler)]        
 	p2.go()
 

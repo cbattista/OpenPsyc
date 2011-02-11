@@ -22,7 +22,7 @@ sys.path.append(os.path.split(os.getcwd())[0])
 
 import subject
 from experiments import printWord, printText
-from mongoTools import MongoAdmin
+from mongoTools import MongoAdmin, ReadTable
 import shuffler
 
 
@@ -60,6 +60,8 @@ angles = angle_shuffler.shuffle()
 side_shuffler = shuffler.Shuffler(mag_sides, trials, 4)
 sides = side_shuffler.shuffle()
 
+big_shuffler = shuffler.Shuffler(mag_sides, trials, 4)
+bigs = big_shuffler.shuffle()
 
 mag_problems=[]
 
@@ -165,18 +167,27 @@ while len(mag_problems):
 	
 	a = angles.pop(0)
 	s = sides.pop(0)
+	bs = bigs.pop(0)
 	x = screen.size[0] / 7
 	y = screen.size[1] / 2
 
+
+	if bs == "left":
+		my_n1 = n1
+		my_n2 = n2
+	else:
+		my_n1 = n2
+		my_n2 = n1
+
 	if s == "left":
 
-		ns1 = Text(text = str(n1), angle = a, anchor = 'center', position = [x * 3, y], color = [255,255,255], font_size = fontsize)
-		ns2 = Text(text = str(n2), angle = 0, anchor = 'center', position = [x * 4, y], color = [255,255,255], font_size = fontsize)
+		ns1 = Text(text = str(my_n1), angle = a, anchor = 'center', position = [x * 3, y], color = [255,255,255], font_size = fontsize)
+		ns2 = Text(text = str(my_n2), angle = 0, anchor = 'center', position = [x * 4, y], color = [255,255,255], font_size = fontsize)
 
 	else:
 
-		ns1 = Text(text = str(n1), angle = 0, anchor = 'center', position = [x * 3, y], color = [255,255,255], font_size = fontsize)
-		ns2 = Text(text = str(n2), angle = a, anchor = 'center', position = [x * 4, y], color = [255,255,255], font_size = fontsize)
+		ns1 = Text(text = str(my_n1), angle = 0, anchor = 'center', position = [x * 3, y], color = [255,255,255], font_size = fontsize)
+		ns2 = Text(text = str(my_n2), angle = a, anchor = 'center', position = [x * 4, y], color = [255,255,255], font_size = fontsize)
 
 
 	expPort = Viewport(screen=screen, stimuli=[ns1, ns2])
