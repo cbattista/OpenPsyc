@@ -145,7 +145,7 @@ instructionText = "In this experiment you will see 2 groups of dots.\nPress LEFT
 
 ratios = shuffler.Condition([.9, .75, .66, .5, .33 ], "ratio", 6)
 seeds = shuffler.Condition([6, 7, 8, 9, 10, 11], "seed", 6)
-size = shuffler.Condition(["area", "perimeter"], "size", 6)
+size = shuffler.Condition(["con", "incon"], "size", 6)
 exemplars = shuffler.Condition([1, 2, 3, 4, 5, 6], "exemplar", 20)
 shapes = shuffler.Condition(['square', 'triangle'], "shape", 7)
 
@@ -198,11 +198,11 @@ for stim, cs in zip(stimList, csList):
 	sub.inputData(trial, "shape", shape)
 	
 	if side == "large":
-		fname1 = "%s_%s_%s_%s_%s_%s_S2.bmp" % (shape, size, ratio, n1, n2, exemplar)
-		fname2 = "%s_%s_%s_%s_%s_%s_S1.bmp" % (shape, size, ratio, n1, n2, exemplar)
+		fname1 = "%s_%s_%s_%s_%s_%s_S2.bmp" % (shape, ratio, n1, n2, exemplar, size)
+		fname2 = "%s_%s_%s_%s_%s_%s_S1.bmp" % (shape, ratio, n1, n2, exemplar, size)
 	else:
-		fname1 = "%s_%s_%s_%s_%s_%s_S1.bmp" % (shape, size, ratio, n1, n2, exemplar)
-		fname2 = "%s_%s_%s_%s_%s_%s_S2.bmp" % (shape, size, ratio, n1, n2, exemplar)
+		fname1 = "%s_%s_%s_%s_%s_%s_S1.bmp" % (shape, ratio, n1, n2, exemplar, size)
+		fname2 = "%s_%s_%s_%s_%s_%s_S2.bmp" % (shape, ratio, n1, n2, exemplar, size)
 		
 	####
 	t1 = Texture(Image.open(os.path.join(stimLib,fname1)))
