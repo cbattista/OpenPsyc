@@ -96,12 +96,14 @@ class ShapeMaster:
 			else:
 				#% similarity of controlled value
 				threshold = 95
+				#print self.controlValue, controlSizes
 				vals = [self.controlValue, sum(controlSizes)]
 				control_ratio =  min(vals) / float(max(vals)) * 100.
 				#check and see whether the control dimension is controlled enough (95% threshold)
 				#print control_ratio
-				print self.ctl_iters
-				if control_ratio >= threshold or self.ctl_iters <= 1000:
+				#print self.ctl_iters
+				#if control_ratio >= threshold or self.ctl_iters <= 1000:
+				if control_ratio >= threshold or self.ctl_iters >= 10000:
 					#it is, so we're done and we can reset the control value
 					self.ctl_iters = 1
 					return mySizes, sum(controlSizes)
