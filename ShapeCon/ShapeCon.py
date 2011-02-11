@@ -26,7 +26,7 @@ myArgs = sys.argv
 try:
 	number = int(myArgs[1])
 except:
-	number = 666
+	number = int(raw_input("Enter a participant number, beeyatch:").strip())
 
 sub = subject.Subject(number, experiment = "shapecon")
 
@@ -37,7 +37,7 @@ sub = subject.Subject(number, experiment = "shapecon")
 trials = 720
 
 #of the total trials, how many do you want to run (good for testing), put -1 for all
-subtrials = 30
+subtrials = -1
 
 #the text presented when a break is given
 breakText = "Time for a break.\nPRESS SPACE TO CONTINUE."
@@ -175,6 +175,8 @@ else:
 	stimList = stimList[0:subtrials]
 	csList = csList[0:subtrials]
 
+line = TextureStimulus(anchor='center', color = [255, 255, 255], position = [screen.size[0]/2, screen.size[1]/2], size= [4, 680])
+
 for stim, cs in zip(stimList, csList):
 	pressed = False
 
@@ -215,7 +217,7 @@ for stim, cs in zip(stimList, csList):
 	texture_object1 = s1.parameters.texture.get_texture_object()
 	texture_object2 = s2.parameters.texture.get_texture_object()
 
-	v = Viewport(screen=screen, stimuli=[s1,s2])
+	v = Viewport(screen=screen, stimuli=[s1,s2, line])
 	p = Presentation(go_duration=('forever', ), viewports=[v])
 	p.add_controller(None, None, FunctionController(during_go_func=put_image_dual, temporal_variables = TIME_SEC_ABSOLUTE))
 	p.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, keyFunc)]
