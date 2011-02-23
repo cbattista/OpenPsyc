@@ -49,6 +49,8 @@ for r in result:
 	ns.sort()
 
 	fullList.append(ns)
+
+	"""
 	if ns not in probList:
 		bad = 0
 		for pref in probList:
@@ -57,8 +59,9 @@ for r in result:
 				
 		if not bad:
 			probList.append(ns)
-quit = 0
+	"""
 
+quit = 0
 
 while not quit:
 	if len(probList) >= t_num:
@@ -67,7 +70,11 @@ while not quit:
 	
 	if len(fullList):
 		ns = fullList.pop()
-		probList.append(ns)
+		if ns not in probList:
+			print ns
+			probList.append(ns)
+		else:
+			print "Repeat detected!"
 	
 probList = probList[:t_num]
 
