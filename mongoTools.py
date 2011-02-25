@@ -12,6 +12,7 @@ class MongoAdmin:
 	access to a mongo database
 	"""
 	def __init__(self, db="test_database"):
+		
 		self.connection = Connection()
 		self.db = self.connection[db]
 		return None
@@ -31,8 +32,6 @@ def GetKeys(p):
 	keys = result.distinct("_id")
 	
 	return keys
-
-
 
 def KeySafe(key):
 	key = key.replace(".", "_")
@@ -110,6 +109,7 @@ class RecursiveTrim:
 
 				if item['value'] > self.maxSD:
 					self.posts.remove({self.measure:item['_id']})
+					print "removing %s" % (item)
 					self.Trim()
 		else:
 			self.avg = 0
@@ -119,7 +119,6 @@ class RecursiveTrim:
 
 	def GetValues(self):
 		return self.avg, self.std, self.count
-
 
 class ReadTable:
 	"""
@@ -246,7 +245,7 @@ class ReadTable:
 
 			
 class WriteTable:
-	def __init__(self, measures, groupBy, screen_condition, condition, dbName, table, name="", maxSD = 3, subject="s_id", count=False):
+	def __init__(self, measures, groupBy, condition, dbName, table, name="", maxSD = 3, subject="s_id", count=False):
 		self.groupBy = groupBy
 
 		dbA = MongoAdmin(dbName)
@@ -254,7 +253,6 @@ class WriteTable:
 
 		self.posts = my_table.posts
 
-		self.screen_condition = screen_condition
 		self.condition = condition
 		self.maxSD = maxSD
 		if name:
@@ -263,7 +261,7 @@ class WriteTable:
 			self.name = "%s_%s" % (dbName, table)	
 			for g in groupBy:
 				self.name = self.name + "_" + g
-			self.name = self.name + "_" + measure
+			self.name = self.name + "_" + measures
 		
 		self.measures = measures
 		self.subject = subject
@@ -273,7 +271,7 @@ class WriteTable:
 		self.initial = {"csum":0, "ccount":0, "ss":0, "avg":0, "std":0}
 		self.finalize = Code("function(prev){ prev.avg = prev.csum / prev.ccount; prev.std = Math.sqrt(Math.abs(prev.ss - prev.avg * prev.csum) / prev.ccount);} ")
 
-		self.s_ids = self.posts.distinct(subject)
+		self.s_ids = self.posts.find(condition).distinct(subject)
 		
 		self.Compute()
 		
@@ -381,21 +379,21 @@ class WriteTable:
 					r[k] = h[k]
 					c[k] = h[k]
 						
-				for m in self.measures:
+				m = self.measures
 
-					rows = self.posts.find(c)
+				rows = self.posts.find(c)
 
-					if rows.count():
-						trimmer = RecursiveTrim(rows, m, self.maxSD)
-						avg, std, count = trimmer.GetValues()
-					else:
-						avg = "NA"
-						std = "NA"
-						count = 0
-				
-					r['%s' % m] = avg
-					r['%s_std' % m] = std
-					r['count'] = int(count)
+				if rows.count():
+					trimmer = RecursiveTrim(rows, m, self.maxSD)
+					avg, std, count = trimmer.GetValues()
+				else:
+					avg = "NA"
+					std = "NA"
+					count = 0
+			
+				r['%s' % m] = avg
+				r['%s_std' % m] = std
+				r['count'] = int(count)
 			
 				items.append(copy.deepcopy(r))
 
@@ -418,9 +416,7 @@ class WriteTable:
 
 	def WriteForR(self):
 
-		headers = [self.subject] + self.groupBy + self.measures
-		if self.count:
-			headers = header + ["freq"] + ["count"]
+		headers = [self.subject] + self.groupBy + [self.measures]
 
 		lines = []
 		for k in self.sDict.keys():
@@ -429,12 +425,13 @@ class WriteTable:
 
 				valid = 0
 				#first check for the validity of this line
-				for m in self.measures:
-					if str(row[m]) != "NA":
-						valid = 1
+				m = self.measures
+				if str(row[m]) != "NA":
+					valid = 1
 				
 				if valid:
 					for h in headers:
+						print 
 						value = str(row[h])
 						if value != "NA":
 							line = "%s,%s" % (line, row[h])
