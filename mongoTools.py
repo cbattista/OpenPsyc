@@ -109,7 +109,6 @@ class RecursiveTrim:
 
 				if item['value'] > self.maxSD:
 					self.posts.remove({self.measure:item['_id']})
-					print "removing %s" % (item)
 					self.Trim()
 		else:
 			self.avg = 0
@@ -237,7 +236,6 @@ class ReadTable:
 				if row:
 					row['trial'] = trial
 					trial = trial + 1
-					print row
 					self.posts.insert(row)
 				row = {}
 				
@@ -245,8 +243,19 @@ class ReadTable:
 
 			
 class WriteTable:
-	def __init__(self, measures, groupBy, condition, dbName, table, name="", maxSD = 3, subject="s_id", count=False):
-		self.groupBy = groupBy
+	def __init__(self, measures, groupBy, condition, dbName, table, name="", maxSD = 3, subject="s_id", count=False, level="subject"):
+		if groupBy:
+			if type(groupBy) == str:
+				self.groupBy = [groupBy]
+			else:
+				self.groupBy = groupBy
+		else:
+			self.groupBy = []
+
+		if level == "trial":
+			self.groupBy += ["trial"]
+
+		self.level = level
 
 		dbA = MongoAdmin(dbName)
 		my_table = dbA.getTable(table)
@@ -255,15 +264,22 @@ class WriteTable:
 
 		self.condition = condition
 		self.maxSD = maxSD
-		if name:
-			self.name = name
-		else:
-			self.name = "%s_%s" % (dbName, table)	
-			for g in groupBy:
-				self.name = self.name + "_" + g
-			self.name = self.name + "_" + measures
+
+		self.name = "%s_%s" % (dbName, table)
+		for g in self.groupBy:
+			self.name = self.name + "_" + g
+
+		for m in measures:
+			self.name = self.name + "_" + m
 		
-		self.measures = measures
+		if name:
+			self.name += "_%s" % name
+
+
+		if type(measures) == str:
+			self.measures = [measures]
+		else:
+			self.measures = measures
 		self.subject = subject
 		self.count = count
 
@@ -310,21 +326,25 @@ class WriteTable:
 
 		dString = "{" + dString.lstrip(',') + "}"
 
-
 		#create the big ol' for loop, one for each grouping factor
 		for g in self.groupBy:
 			myString = "%s%sfor %s in gDict['%s']:\n" % (myString, tabby, g, g)
 			tabby = tabby + "\t" 
-
+		
+		
 		myString = "%s%sheaderItems.append(%s)\n" % (myString, tabby, dString)
 		myString = "%s%sheaderList.append(%s)" % (myString, tabby, lString)
 
-		exec(myString)
 
 		subjects = self.posts.distinct(self.subject)
 
-		groupBy = [self.subject] + self.groupBy
-
+		if self.groupBy:
+			exec(myString)
+			groupBy = [self.subject] + self.groupBy
+		else:
+			groupBy = [self.subject]
+			headerItems = []
+			headerList = []
 
 		#firstly, let's check and see whether these combos are even valid
 
@@ -370,53 +390,72 @@ class WriteTable:
 
 			items = []
 
-			for h in validHeaderItems:
+			if validHeaderItems:
 
-				r = {self.subject : s_id}
-				myC = copy.deepcopy(c)
+				for h in validHeaderItems:
 
-				for k in h.keys():
-					r[k] = h[k]
-					c[k] = h[k]
+					r = {self.subject : s_id}
+
+					for k in h.keys():
+						r[k] = h[k]
+						c[k] = h[k]
 						
-				m = self.measures
+					items = self.getRows(c, r, items)
+			else:
+				
+				items = self.getRows(c, {self.subject : s_id}, items)
 
-				rows = self.posts.find(c)
-
-				if rows.count():
-					trimmer = RecursiveTrim(rows, m, self.maxSD)
-					avg, std, count = trimmer.GetValues()
-				else:
-					avg = "NA"
-					std = "NA"
-					count = 0
-			
-				r['%s' % m] = avg
-				r['%s_std' % m] = std
-				r['count'] = int(count)
-			
-				items.append(copy.deepcopy(r))
-
-			#compute the total amount of measurements here
-			total = 0.
-			for i in items:
-				total = total + i['count']
-
-			#add a frequency field to the items
-			for i in items:
-				if total > 0:
-					i['freq'] = i['count'] / total * 100.
-				else:
-					i['freq'] = "NA"
 
 			sDict[str(s_id)] = items
 
 		self.sDict = sDict
 
+	def getRows(self, c, r, items):
+		meas = self.measures
+
+		for m in meas:
+
+			rows = self.posts.find(c)
+
+			if rows.count() ==1:
+				row = self.posts.find_one(c)
+				avg = row[m]
+ 				std = "NA"
+				count = 1
+			elif rows.count() > 1:
+				trimmer = RecursiveTrim(rows, m, self.maxSD)
+				avg, std, count = trimmer.GetValues()
+			else:
+				avg = "NA"
+				std = "NA"
+				count = 0
+
+			r['%s' % m] = avg
+			r['%s_std' % m] = std
+			r['%s_count' % m] = int(count)
+
+		items.append(copy.deepcopy(r))
+
+		#compute the total amount of measurements here
+		for m in meas:
+			total = 0.
+			for i in items:
+				total = total + i['%s_count' % m]
+
+			#add a frequency field to the items
+			for i in items:
+				if total > 0:
+					i['%s_freq' % m] = i['%s_count' %m] / total * 100.
+				else:
+					i['freq_%s' % m] = "NA"
+
+		return items
+	
+
 
 	def WriteForR(self):
 
-		headers = [self.subject] + self.groupBy + [self.measures]
+		headers = [self.subject] + self.groupBy + self.measures
 
 		lines = []
 		for k in self.sDict.keys():
@@ -425,13 +464,14 @@ class WriteTable:
 
 				valid = 0
 				#first check for the validity of this line
-				m = self.measures
-				if str(row[m]) != "NA":
-					valid = 1
-				
+				meas = self.measures
+
+				for m in meas:				
+					if str(row[m]) != "NA":
+						valid = 1
+			
 				if valid:
 					for h in headers:
-						print 
 						value = str(row[h])
 						if value != "NA":
 							line = "%s,%s" % (line, row[h])
