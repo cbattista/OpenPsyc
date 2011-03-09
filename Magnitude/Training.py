@@ -82,11 +82,16 @@ mag_sides = ["left", "right"]
 angle_shuffler = shuffler.Shuffler(mag_angles, trials/2, 5)
 angles = angle_shuffler.shuffle()
 
+bs_shuffler = shuffler.Shuffler(["ll", "lr", "rl", "rr"], trials/2, 5)
+bs_list = bs_shuffler.shuffle()
+
+"""
 side_shuffler = shuffler.Shuffler(mag_sides, trials/2, 4)
 sides = side_shuffler.shuffle()
 
 big_shuffler = shuffler.Shuffler(mag_sides, trials/2, 4)
 bigs = big_shuffler.shuffle()
+"""
 
 items = ["add", "mag"]
 
@@ -191,25 +196,27 @@ while len(stimList):
 
 
 	numbers = [n1, n2]
-	random.shuffle(numbers)
+	numbers.sort()
 
 	if stim == "mag":
-		problemString = "%s | %s" % (numbers[0], numbers[1])
-		
+	
 		a = angles.pop(0)
-		s = sides.pop(0)
-		bs = bigs.pop(0)
+		bs = bs_list.pop(0)
+		s = bs[1]
+		b = bs[0]
 		x = screen.size[0] / 7
 		y = screen.size[1] / 2
 
-		if bs == "left":
-			my_n1 = n1
-			my_n2 = n2
+		if b == "l":
+			my_n1 = numbers[1]
+			my_n2 = numbers[0]
 		else:
-			my_n1 = n2
-			my_n2 = n1
+			my_n1 = numbers[0]
+			my_n2 = numbers[1]
 
-		if s == "left":
+		problemString = "%s | %s" % (my_n1, my_n2)
+
+		if s == "l":
 
 			ns1 = Text(text = str(my_n1), angle = a, anchor = 'center', position = [x * 3, y], color = [255,255,255], font_size = fontsize)
 			ns2 = Text(text = str(my_n2), angle = 0, anchor = 'center', position = [x * 4, y], color = [255,255,255], font_size = fontsize)
@@ -221,9 +228,19 @@ while len(stimList):
 
 
 		expPort = Viewport(screen=screen, stimuli=[ns1, ns2])
+		
+		print "----------------------"
+		print "PROBLEM: %s" % problemString
+		print "Rotated: %s" % s
+		print "Larger: %s" % b
+		print "----------------------"
+
 
 
 	else:
+
+		random.shuffle(numbers)
+
 		ns1 = str(numbers[0])
 		ns2 = str(numbers[1])
 
@@ -235,6 +252,12 @@ while len(stimList):
 		problem = "   %s\n+ %s" % (ns1, ns2)
 		problemString = "%s + %s" % (numbers[0], numbers[1])
 
+		#format problem
+		print "----------------------"
+		print "PROBLEM: %s" % problemString
+		print "SOLUTION: %s " % solution
+		print "----------------------"
+
 
 		expText, expPort = printText(screen, problem, fontsize, (255, 255, 255))
 
@@ -244,20 +267,13 @@ while len(stimList):
 	subject.inputData(trial, "problem", problemString)
 	subject.inputData(trial, "type", stim)
 
-	#format problem
-	print "----------------------"
-	print "PROBLEM: %s" % problemString
-	print "SOLUTION: %s " % solution
-	print "----------------------"
+
 
 	ns = [n1, n2]
 
 	#default values for misfiring voice key
 	misfire = 0
 	ACC = 1
-
-
-	
 
 	#BLOCK 1 - Problem & RESPONSE
 

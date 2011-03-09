@@ -19,7 +19,7 @@ sys.path.append('/home/cogdev/code/OpenPsyc/')
 
 import subject
 from experiments import printWord, printText
-from mongoTools import MongoAdmin
+from mongoTools import MongoAdmin, ReadTable
 import shuffler
 
 

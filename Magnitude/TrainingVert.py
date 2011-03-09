@@ -55,13 +55,7 @@ for r in posts.find(q):
 	problems.append([ns, orig_strat])
 
 
-def normalize(u):
-    low  = min(u)
-    high = max(u)
-    norm = max(abs(low), high)
-    for i in range(len(u)):
-        u[i] = u[i]*(1.0/norm)
-    return u
+
 
 
 #determine all ratios
@@ -72,8 +66,6 @@ for p in problems:
 	n2 = p[0][1]
 	allnums.append(n1)
 	allnums.append(n2)
-
-brightness = normalize(copy.deepcopy(allnums))
 
 #make magnitudes and whatnot
 ls = shuffler.ListShuffler(range(len(problems)), 200, 5)
@@ -121,6 +113,7 @@ def problem_controller(f_abs):
 				#end signal
 				RT = offset - onset
 				subject.inputData(trial, "RT", RT)
+				time.sleep(0.75)
 				p.parameters.go_duration = (0, 'frames')
 				ser.close()
 
@@ -183,49 +176,31 @@ while len(stimList):
 			solution = str(n1 + n2)
 
 
-	if condition == "b" and stim == "mag":
-		i1 = allnums.index(n1)
-		i2 = allnums.index(n2)
 
-		indexes = [i1, i2]
-		random.shuffle(indexes)
+	numbers = [n1, n2]
+	random.shuffle(numbers)
 
-		b1 = brightness[indexes[0]]
-		b2 = brightness[indexes[1]]
-
-		problem = "%s %s %s" % (b1, symbol, b2)
-		#Make Rectangles
-		x = screen.size[0] / 4
-		y = screen.size[1] / 2
-
-		box1 = TextureStimulus(color = [b1, b1, b1], position = [x, y], size= [100, 100])
-		box2 = TextureStimulus(color = [b2, b2, b2], position = [x * 3, y], size= [100, 100])
-		expPort = Viewport(screen=screen, stimuli=[box1, box2])
-
-
+	if stim == "mag":
+		problem = "%s   OR   %s" % (numbers[0], numbers[1])
+		problemString = "%s | %s" % (numbers[0], numbers[1])
 	else:
-		numbers = [n1, n2]
-		random.shuffle(numbers)
+		ns1 = str(numbers[0])
+		ns2 = str(numbers[1])
 
-		if stim == "mag":
-			problem = "%s   OR   %s" % (numbers[0], numbers[1])
-		else:
-			ns1 = str(numbers[0])
-			ns2 = str(numbers[1])
+		if len(ns1) == 1:
+			ns1 = " %s" % ns1
+		if len(ns2) == 1:
+			ns2 = " %s" % ns2	
 
-			if len(ns1) == 1:
-				ns1 = " %s" % ns1
-			if len(ns2) == 1:
-				ns2 = " %s" % ns2	
-
-			problem = "   %s\n+ %s" % (ns1, ns2)
+		problem = "   %s\n+ %s" % (ns1, ns2)
+		problemString = "%s + %s" % (numbers[0], numbers[1])
 
 
-		expText, expPort = printText(screen, problem, 80, (255, 255, 255))
+	expText, expPort = printText(screen, problem, 80, (255, 255, 255))
 
 	subject.inputData(trial, "n1", n1)
 	subject.inputData(trial, "n2", n2)
-	subject.inputData(trial, "problem", problem)
+	subject.inputData(trial, "problem", problemString)
 	subject.inputData(trial, "type", stim)
 
 	#format problem
