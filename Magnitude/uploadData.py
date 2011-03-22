@@ -67,9 +67,11 @@ while not quit:
 	if len(probList) >= t_num:
 		quit = 1
 		
-	
 	if len(fullList):
-		ns = fullList.pop()
+		ns = fullList.pop(0)
+
+		print ns
+
 		if ns not in probList:
 			print ns
 			probList.append(ns)

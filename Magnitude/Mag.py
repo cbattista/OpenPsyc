@@ -53,7 +53,6 @@ n2s = numbers[trials:]
 mag_angles = [15, 30, 345, 330]
 mag_sides = ["left", "right"] 
 
-
 angle_shuffler = shuffler.Shuffler(mag_angles, trials, 5)
 angles = angle_shuffler.shuffle()
 
@@ -161,7 +160,7 @@ while len(mag_problems):
 	y = screen.size[1] / 2
 
 	numbers = [n1, n2]
-	random.shuffle(numbers)
+	numbers.sort()
 
 	problemString = "%s | %s" % (numbers[0], numbers[1])
 	
@@ -172,12 +171,14 @@ while len(mag_problems):
 	y = screen.size[1] / 2
 
 
-	if bs == "left":
-		my_n1 = n1
-		my_n2 = n2
+	if bs == "right":
+		my_n1 = numbers[0]
+		my_n2 = numbers[1]
 	else:
-		my_n1 = n2
-		my_n2 = n1
+		my_n1 = numbers[1]
+		my_n2 = numbers[0]
+
+	problemString = "%s | %s" % (my_n1, my_n2)
 
 	if s == "left":
 
@@ -197,6 +198,9 @@ while len(mag_problems):
 	print "PROBLEM: %s" % problemString
 	print "SOLUTION: %s " % solution
 	print "----------------------"
+
+	print "Rotated: %s" % s
+	print "Larger: %s" % bs
 
 	ns = [n1, n2]
 
