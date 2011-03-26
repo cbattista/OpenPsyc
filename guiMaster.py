@@ -4,7 +4,7 @@ import inspect
 
 class FloatCtrl(wx.TextCtrl):
 	def __init__(self, parent, *args, **kwargs):
-		wx.TextCtrl__init__(self, parent, *args, **kwargs)
+		wx.TextCtrl.__init__(self, parent, *args, **kwargs)
 
 	def SetFloat(self, value):
 		self.SetValue(str(value))
@@ -26,6 +26,10 @@ class guiMaster:
 		self.argnames = self.args[0]
 		self.argnames.remove('self')
 		self.defaults = self.args[3]
+
+		print self.argnames
+		print self.defaults	
+
 		self.app = wx.App(False)
 		self.frame = wx.Frame(None, title=inspect.getfile(self.targetClass))
 		
@@ -56,24 +60,40 @@ class guiMaster:
 	def makeWidget(self, arg, value, orient=wx.VERTICAL):
 		self.widgets = []
 
-		sizer = wx.BoxSizer(orient)
-
-		sizer.Add(wx.StaticText(self.frame, -1, arg))
-
 		if type(value) == str:
 			widget = wx.TextCtrl(self.frame, -1, value)
 		elif type(value) == int:
 			widget = wx.SpinCtrl(self.frame, -1, str(value))
 		elif type(value) == float:
-			widget = wx.FloatCtrl(self.frame, -1)
+			widget = FloatCtrl(self.frame, -1)
 			widget.SetFloat(value)
 		elif type(value) == 'NoneType':
 			widget = wx.TextCtrl(self.frame, -1)
+		elif type(value) == list:
+			widget = wx.BoxSizer(wx.VERTICAL)
+
+			for v in value:
+				item = self.makeWidget(None, v)
+				widget.Add(item)
+		elif type(value) == bool:
+			widget = wx.CheckBox(self.frame, -1)
+			widget.SetValue(value)
+			orient = wx.HORIZONTAL
+		elif type(value) == dict:
+			widget = wx.BoxSizer(wx.VERTICAL)
+
+			for k in value.keys():
+				item = self.makeWidget(k, value[k], wx.HORIZONTAL)
+				widget.Add(item)
+
 		else:
 			widget = wx.TextCtrl(self.frame, -1, str(value))
-	
+
 		self.widgets.append(widget)
 
+		sizer = wx.BoxSizer(orient)
+		if arg:
+			sizer.Add(wx.StaticText(self.frame, -1, arg))
 		sizer.Add(widget)
 
 		return sizer
