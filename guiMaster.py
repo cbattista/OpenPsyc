@@ -10,7 +10,7 @@ class FloatCtrl(wx.TextCtrl):
 		self.SetValue(str(value))
 
 	def GetFloat(self):
-		return float(self.GetValue)
+		return float(self.GetValue())
 
 class guiMaster:
 	def __init__(self, targetClass):
@@ -27,9 +27,6 @@ class guiMaster:
 		self.argnames.remove('self')
 		self.defaults = self.args[3]
 
-		print self.argnames
-		print self.defaults	
-
 		self.app = wx.App(False)
 		self.frame = wx.Frame(None, title=inspect.getfile(self.targetClass))
 		
@@ -37,7 +34,7 @@ class guiMaster:
 		self.construct()
 
 	def construct(self):
-		self.sizers = []
+		self.widgets = []
 
 		mainBox = wx.BoxSizer(wx.VERTICAL)
 
@@ -52,14 +49,74 @@ class guiMaster:
 
 			mainBox.Add(sizer)
 
+		#make a an 'init' button
+		mainBox.Add(wx.Button(self.frame, -1, 'GO!'))
+
+		self.frame.Bind(wx.EVT_BUTTON, self.deconstruct)
+
 		self.frame.SetSizerAndFit(mainBox)
 
 		self.frame.Show()
 
 
-	def makeWidget(self, arg, value, orient=wx.VERTICAL):
-		self.widgets = []
+	def deconstruct(self, event):
+		values = []
+		for w in self.widgets:
+			value = self.readWidget(w)
+			#check if it's a string that wants to be a dict
+			if type(value) == list:
+				isDict = False
+				v = value[0]
+				if len(v) == 2:
+					print v[0]
+					if v[0].startswith('{'):
+						isDict = True
 
+				if isDict:
+					d = {}
+					for v in value:
+						key = v[0].lstrip('{')
+						val = v[1]
+						d[key] = val
+					value = d 
+
+			values.append(value)
+
+		print values
+
+	def readWidget(self, w):
+		wt = str(type(w))
+		wt = wt.split('.')[-1]
+		wt = wt.strip("'>")
+
+		value = wt
+
+		if wt == 'TextCtrl':
+			value = w.GetValue()
+		elif wt == 'SpinCtrl':
+			value = int(w.GetValue())
+		elif wt == 'FloatCtrl':
+			value = w.GetFloat()
+		elif wt == 'CheckBox':
+			value = w.GetValue()
+		elif wt == 'BoxSizer':
+			if len(w.GetChildren()) > 1:
+				value = []
+				for b in w.GetChildren():
+					value.append(self.readWidget(b))
+			else:
+				value = self.readWidget(w.GetItem(0))
+		elif wt == 'SizerItem':
+			if w.IsWindow():
+				value = self.readWidget(w.GetWindow())
+			else:
+				value = self.readWidget(w.GetSizer())
+		elif wt == 'StaticText':
+			value = "{" + w.GetLabel()
+
+		return value
+
+	def makeWidget(self, arg, value, orient=wx.VERTICAL, root = True):
 		if type(value) == str:
 			widget = wx.TextCtrl(self.frame, -1, value)
 		elif type(value) == int:
@@ -67,13 +124,11 @@ class guiMaster:
 		elif type(value) == float:
 			widget = FloatCtrl(self.frame, -1)
 			widget.SetFloat(value)
-		elif type(value) == 'NoneType':
-			widget = wx.TextCtrl(self.frame, -1)
 		elif type(value) == list:
 			widget = wx.BoxSizer(wx.VERTICAL)
 
 			for v in value:
-				item = self.makeWidget(None, v)
+				item = self.makeWidget(None, v, root=False)
 				widget.Add(item)
 		elif type(value) == bool:
 			widget = wx.CheckBox(self.frame, -1)
@@ -83,13 +138,14 @@ class guiMaster:
 			widget = wx.BoxSizer(wx.VERTICAL)
 
 			for k in value.keys():
-				item = self.makeWidget(k, value[k], wx.HORIZONTAL)
+				item = self.makeWidget(k, value[k], wx.HORIZONTAL, root=False)
 				widget.Add(item)
 
 		else:
 			widget = wx.TextCtrl(self.frame, -1, str(value))
 
-		self.widgets.append(widget)
+		if root:
+			self.widgets.append(widget)
 
 		sizer = wx.BoxSizer(orient)
 		if arg:
