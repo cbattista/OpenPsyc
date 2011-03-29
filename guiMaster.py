@@ -33,11 +33,13 @@ class guiMaster:
 		#make the thing
 		self.construct()
 
+
 	def construct(self):
 		self.widgets = []
 
 		mainBox = wx.BoxSizer(wx.VERTICAL)
 
+		#get the arguments, create GUI components out of them
 		for arg in self.argnames:
 			i = self.argnames.index(arg)
 			if len(self.defaults) > i:
@@ -49,17 +51,36 @@ class guiMaster:
 
 			mainBox.Add(sizer)
 
-		#make a an 'init' button
-		mainBox.Add(wx.Button(self.frame, -1, 'GO!'))
+		
+		#create the 'init' function button - this one is special because its args are already listed
+		b_id = 1
 
-		self.frame.Bind(wx.EVT_BUTTON, self.deconstruct)
+		init = wx.Button(self.frame, b_id, 'Initialize')
+		mainBox.Add(init)
 
+		self.functions = []
+				
+		for f in inspect.getmembers(self.targetClass):	
+			if f[0] not in ['__doc__', '__init__', '__module__']:
+				b_id += 1
+				self.functions.append(f[1])
+				button = wx.Button(self.frame, b_id, f[0])
+				mainBox.Add(button)
+
+		self.frame.Bind(wx.EVT_BUTTON, self.onButton)
 		self.frame.SetSizerAndFit(mainBox)
-
 		self.frame.Show()
 
 
-	def deconstruct(self, event):
+	def onButton(self, event):
+		if event.GetId() == 1:
+			self.deconstruct()
+		else:
+			function = self.functions[event.GetId() - 2]
+			function(self.obj)
+
+	def deconstruct(self):
+		#get the values for each of the fields
 		values = []
 		for w in self.widgets:
 			value = self.readWidget(w)
@@ -68,7 +89,6 @@ class guiMaster:
 				isDict = False
 				v = value[0]
 				if len(v) == 2:
-					print v[0]
 					if v[0].startswith('{'):
 						isDict = True
 
@@ -82,7 +102,10 @@ class guiMaster:
 
 			values.append(value)
 
-		print values
+		#now create an object from the values
+		self.obj = self.targetClass()
+		for a, v in zip(self.argnames, values):
+			setattr(self.obj, a, v)
 
 	def readWidget(self, w):
 		wt = str(type(w))
