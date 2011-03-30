@@ -3,6 +3,7 @@ import wx
 import inspect
 
 class FloatCtrl(wx.TextCtrl):
+	#extension of TextCtrl object to process floating point numbers
 	def __init__(self, parent, *args, **kwargs):
 		wx.TextCtrl.__init__(self, parent, *args, **kwargs)
 
@@ -12,27 +13,38 @@ class FloatCtrl(wx.TextCtrl):
 	def GetFloat(self):
 		return float(self.GetValue())
 
-class guiMaster:
+class objApp:
 	def __init__(self, targetClass):
+		self.app = wx.App(False)
+		self.frame = objFrame(None, targetClass)
+
+	def go(self):
+		self.app.MainLoop()
+
+class objFrame(wx.Frame):
+	def __init__(self, parent, target, recurse=True, *args, **kwargs):
 		#fun with python - get the attributes of an Object, see what the default values to ascertain what type of gui component it should be
-		if inspect.isclass(targetClass):
-			self.targetClass = targetClass
+		wx.Frame.__init__(self, parent, *args, **kwargs)
+		if inspect.isclass(target):
+			self.args = inspect.getargspec(target.__init__)
+		elif inspect.isfunction(target) or inspect.ismethod(target):
+			self.args = inspect.getargspec(target)
 		else:
-			raise Exception("You need to provide me with a target class, sucka!")		
+			raise Exception("I only work with functions, classes and methods, dick.")
+
+		self.title = inspect.getfile(target)
 	
-		self.args = inspect.getargspec(self.targetClass.__init__)
+		self.target = target
+
+		self.recurse = recurse
 
 		#get the arguments and the default values
 		self.argnames = self.args[0]
 		self.argnames.remove('self')
 		self.defaults = self.args[3]
-
-		self.app = wx.App(False)
-		self.frame = wx.Frame(None, title=inspect.getfile(self.targetClass))
 		
 		#make the thing
 		self.construct()
-
 
 	def construct(self):
 		self.widgets = []
@@ -55,29 +67,48 @@ class guiMaster:
 		#create the 'init' function button - this one is special because its args are already listed
 		b_id = 1
 
-		init = wx.Button(self.frame, b_id, 'Initialize')
-		mainBox.Add(init)
+		if inspect.isclass(self.target):
+			init = wx.Button(self, b_id, 'Initialize')
+			mainBox.Add(init)
 
 		self.functions = []
-				
-		for f in inspect.getmembers(self.targetClass):	
-			if f[0] not in ['__doc__', '__init__', '__module__']:
-				b_id += 1
-				self.functions.append(f[1])
-				button = wx.Button(self.frame, b_id, f[0])
-				mainBox.Add(button)
+		self.functionFrames = []
+		
+		if self.recurse:
+			for f in inspect.getmembers(self.target):
+				#if this is a user defined function, create a frame for its arguments
+				if inspect.isbuiltin(f[0]) or f[0].startswith('__'):
+					pass
+				else:
+					b_id += 1
+					self.functions.append(f[1])
+					button = wx.Button(self, b_id, f[0])
+					mainBox.Add(button)
+					functionFrame = objFrame(self, f[1], recurse=False)
+					self.functionFrames.append(functionFrame)
+					mainBox.Add(functionFrame)
 
-		self.frame.Bind(wx.EVT_BUTTON, self.onButton)
-		self.frame.SetSizerAndFit(mainBox)
-		self.frame.Show()
+		self.Bind(wx.EVT_BUTTON, self.onButton)
+		self.SetSizerAndFit(mainBox)
+		self.Show()
 
 
 	def onButton(self, event):
 		if event.GetId() == 1:
-			self.deconstruct()
+			values = self.deconstruct()
+			#now create an object from the values
+			self.obj = self.target()
+			for a, v in zip(self.argnames, values):
+				setattr(self.obj, a, v)
+
 		else:
 			function = self.functions[event.GetId() - 2]
-			function(self.obj)
+			ff = self.functionFrames[event.GetId() - 2]
+			values = ff.deconstruct()
+			argString = ""
+			for a, v in zip(ff.argnames, values):
+				argString += ", %s=%s" % (a, v)
+			exec("function(self.obj%s)" % argString)
 
 	def deconstruct(self):
 		#get the values for each of the fields
@@ -102,10 +133,7 @@ class guiMaster:
 
 			values.append(value)
 
-		#now create an object from the values
-		self.obj = self.targetClass()
-		for a, v in zip(self.argnames, values):
-			setattr(self.obj, a, v)
+		return values
 
 	def readWidget(self, w):
 		wt = str(type(w))
@@ -141,11 +169,11 @@ class guiMaster:
 
 	def makeWidget(self, arg, value, orient=wx.VERTICAL, root = True):
 		if type(value) == str:
-			widget = wx.TextCtrl(self.frame, -1, value)
+			widget = wx.TextCtrl(self, -1, value)
 		elif type(value) == int:
-			widget = wx.SpinCtrl(self.frame, -1, str(value))
+			widget = wx.SpinCtrl(self, -1, str(value))
 		elif type(value) == float:
-			widget = FloatCtrl(self.frame, -1)
+			widget = FloatCtrl(self, -1)
 			widget.SetFloat(value)
 		elif type(value) == list:
 			widget = wx.BoxSizer(wx.VERTICAL)
@@ -154,7 +182,7 @@ class guiMaster:
 				item = self.makeWidget(None, v, root=False)
 				widget.Add(item)
 		elif type(value) == bool:
-			widget = wx.CheckBox(self.frame, -1)
+			widget = wx.CheckBox(self, -1)
 			widget.SetValue(value)
 			orient = wx.HORIZONTAL
 		elif type(value) == dict:
@@ -165,19 +193,15 @@ class guiMaster:
 				widget.Add(item)
 
 		else:
-			widget = wx.TextCtrl(self.frame, -1, str(value))
+			widget = wx.TextCtrl(self, -1, str(value))
 
 		if root:
 			self.widgets.append(widget)
 
 		sizer = wx.BoxSizer(orient)
 		if arg:
-			sizer.Add(wx.StaticText(self.frame, -1, arg))
+			sizer.Add(wx.StaticText(self, -1, arg))
 		sizer.Add(widget)
 
 		return sizer
-
-	def go(self):
-		self.app.MainLoop()
-
 
