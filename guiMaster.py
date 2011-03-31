@@ -16,15 +16,33 @@ class FloatCtrl(wx.TextCtrl):
 class objApp:
 	def __init__(self, targetClass):
 		self.app = wx.App(False)
-		self.frame = objFrame(None, targetClass)
+		objMaker(None, targetClass)
 
 	def go(self):
 		self.app.MainLoop()
 
-class objFrame(wx.Frame):
+class objMaker:
 	def __init__(self, parent, target, recurse=True, *args, **kwargs):
+		if inspect.isclass(target) or inspect.isfunction(target):
+			frame = wx.Frame(None)
+			self.frame = frame
+			sizer = objSizer(frame, target)
+			self.sizer = sizer
+			self.frame.SetSizerAndFit(sizer)
+			self.frame.Show()
+		elif inspect.ismethod(target):
+			self.frame = None
+			self.sizer = objSizer(parent, target)
+
+
+class objSizer(wx.BoxSizer):
+	def __init__(self, parent, target, recurse=True, *args, **kwargs):
+
 		#fun with python - get the attributes of an Object, see what the default values to ascertain what type of gui component it should be
-		wx.Frame.__init__(self, parent, *args, **kwargs)
+		wx.BoxSizer.__init__(self, *args, **kwargs)
+
+		self.SetOrientation(wx.VERTICAL)
+
 		if inspect.isclass(target):
 			self.args = inspect.getargspec(target.__init__)
 		elif inspect.isfunction(target) or inspect.ismethod(target):
@@ -38,6 +56,8 @@ class objFrame(wx.Frame):
 
 		self.recurse = recurse
 
+		self.parent = parent
+
 		#get the arguments and the default values
 		self.argnames = self.args[0]
 		self.argnames.remove('self')
@@ -49,8 +69,6 @@ class objFrame(wx.Frame):
 	def construct(self):
 		self.widgets = []
 
-		mainBox = wx.BoxSizer(wx.VERTICAL)
-
 		#get the arguments, create GUI components out of them
 		for arg in self.argnames:
 			i = self.argnames.index(arg)
@@ -61,15 +79,15 @@ class objFrame(wx.Frame):
 
 			sizer = self.makeWidget(arg, value)
 
-			mainBox.Add(sizer)
+			self.Add(sizer)
 
 		
 		#create the 'init' function button - this one is special because its args are already listed
 		b_id = 1
 
 		if inspect.isclass(self.target):
-			init = wx.Button(self, b_id, 'Initialize')
-			mainBox.Add(init)
+			init = wx.Button(self.parent, b_id, 'Initialize')
+			self.Add(init)
 
 		self.functions = []
 		self.functionFrames = []
@@ -82,16 +100,13 @@ class objFrame(wx.Frame):
 				else:
 					b_id += 1
 					self.functions.append(f[1])
-					button = wx.Button(self, b_id, f[0])
-					mainBox.Add(button)
-					functionFrame = objFrame(self, f[1], recurse=False)
+					button = wx.Button(self.parent, b_id, f[0])
+					self.Add(button)
+					functionFrame = objSizer(self.parent, f[1], recurse=False)
 					self.functionFrames.append(functionFrame)
-					mainBox.Add(functionFrame)
+					self.Add(functionFrame)
 
-		self.Bind(wx.EVT_BUTTON, self.onButton)
-		self.SetSizerAndFit(mainBox)
-		self.Show()
-
+		self.parent.Bind(wx.EVT_BUTTON, self.onButton)
 
 	def onButton(self, event):
 		if event.GetId() == 1:
@@ -169,20 +184,23 @@ class objFrame(wx.Frame):
 
 	def makeWidget(self, arg, value, orient=wx.VERTICAL, root = True):
 		if type(value) == str:
-			widget = wx.TextCtrl(self, -1, value)
+			widget = wx.TextCtrl(self.parent, -1, value)
 		elif type(value) == int:
-			widget = wx.SpinCtrl(self, -1, str(value))
+			widget = wx.SpinCtrl(self.parent, -1, str(value))
 		elif type(value) == float:
-			widget = FloatCtrl(self, -1)
+			widget = FloatCtrl(self.parent, -1)
 			widget.SetFloat(value)
 		elif type(value) == list:
-			widget = wx.BoxSizer(wx.VERTICAL)
+			if len(value) <= 4:
+				widget = wx.BoxSizer(wx.HORIZONTAL)
+			else:
+				widget = wx.BoxSizer(wx.VERTICAL)
 
 			for v in value:
 				item = self.makeWidget(None, v, root=False)
 				widget.Add(item)
 		elif type(value) == bool:
-			widget = wx.CheckBox(self, -1)
+			widget = wx.CheckBox(self.parent, -1)
 			widget.SetValue(value)
 			orient = wx.HORIZONTAL
 		elif type(value) == dict:
@@ -193,14 +211,14 @@ class objFrame(wx.Frame):
 				widget.Add(item)
 
 		else:
-			widget = wx.TextCtrl(self, -1, str(value))
+			widget = wx.TextCtrl(self.parent, -1, str(value))
 
 		if root:
 			self.widgets.append(widget)
 
 		sizer = wx.BoxSizer(orient)
 		if arg:
-			sizer.Add(wx.StaticText(self, -1, arg))
+			sizer.Add(wx.StaticText(self.parent, -1, arg))
 		sizer.Add(widget)
 
 		return sizer
