@@ -36,19 +36,8 @@ class objMaker:
 			self.frame = None
 			self.sizer = objSizer(parent, target)
 
-class cSizer(wx.Sizer):
-	def __init__(self, *args, **kwargs):
-		wx.Sizer.__init__(self, *args, **kwargs)
 
-	def SetBackgroundColour(self, colour=[100, 100, 200]):
-		for c in self.GetChildren():
-			if c.IsWindow():
-				c.SetBackgroundColour(colour)
-			else:
-				c.SetBackgroundColour(colour)
-
-
-class objSizer(cSizer, wx.GridBagSizer):
+class objSizer(wx.GridBagSizer):
 	def __init__(self, parent, target, recurse=True, color=[100, 100, 200], *args, **kwargs):
 
 		#fun with python - get the attributes of an Object, see what the default values to ascertain what type of gui component it should be
@@ -87,6 +76,7 @@ class objSizer(cSizer, wx.GridBagSizer):
 		self.items['init'] = None
 		self.items['methods'] = []
 
+
 		#get the arguments, create GUI components out of them, store them for later
 		for arg in self.argnames:
 			i = self.argnames.index(arg)
@@ -95,9 +85,11 @@ class objSizer(cSizer, wx.GridBagSizer):
 			else:
 				value = None
 
-			widget = objWidget(self.parent, arg, value, self)
+			p = wx.Panel(self.parent, -1)
+			widget = objWidget(p, arg, value, self)
+			p.SetSizer(widget)
 			self.widgets.append(widget)
-			self.items['args'].append(widget)
+			self.items['args'].append(p)
 		
 
 		#create the 'init' function button - this one is special because its args are already listed
@@ -153,14 +145,14 @@ class objSizer(cSizer, wx.GridBagSizer):
 		self.SetCols(cols)
 
 		index = 0
-
-		colours = [[100, 200, 100], [100, 100, 200]]
+		colours = [wx.SystemSettings.GetColour(wx.SYS_COLOUR_INACTIVECAPTION), wx.SystemSettings.GetColour(wx.SYS_COLOUR_ACTIVECAPTION)]
 
 		for r in range(0, rows):
 			for c in range(0, cols):
 				if len(args) > index:
 					a = args[index]
-					self.Add(a, [r, c], flag = wx.ALL, border = 5)
+					a.SetBackgroundColour(colours[0])
+					self.Add(a, [r, c], flag = wx.ALL | wx.EXPAND, border = 5)
 					colours.reverse()
 
 				index += 1
@@ -179,8 +171,9 @@ class objSizer(cSizer, wx.GridBagSizer):
 
 		for b, m in zip(self.buttons, methods):
 			#we want to place these at the start of each new row
-			self.Add(b, [count, 0])
-			self.Add(m, [count, 1], span=[1, cols - 1], flag=wx.EXPAND)			
+			self.Add(m, [count, 0], span=[1, cols - 1], flag=wx.EXPAND)	
+			self.Add(b, [count, cols-1], flag=wx.EXPAND)
+		
 			count += 1
 
 	def onButton(self, event):
