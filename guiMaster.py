@@ -138,9 +138,6 @@ class objSizer(wx.GridBagSizer):
 			cols = numitems
 			rows = 1
 
-
-		#rows += len(methods)
-
 		self.SetRows(rows)
 		self.SetCols(cols)
 
@@ -149,7 +146,7 @@ class objSizer(wx.GridBagSizer):
 			for c in range(0, cols):
 				if len(args) > index:
 					a = args[index]
-					self.Add(a, [r, c])
+					self.Add(a, [r, c], flag = wx.ALL, border = 10)
 
 				index += 1
 
@@ -158,10 +155,12 @@ class objSizer(wx.GridBagSizer):
 			self.SetCols(cols)
 			self.Add(init, [0, cols-1], span=[rows, 1], flag = wx.EXPAND)
 
-		count = rows
+		count = rows + 1
 		if len(methods):
-			rows += len(methods)
-			self.SetRows(rows)
+			rows += len(methods) + 1
+			self.SetRows(rows + 1)
+			self.Add(wx.StaticLine(self.parent), pos=[count, 0], span=[1, cols], flag=wx.EXPAND)
+			count += 1
 
 		for b, m in zip(self.buttons, methods):
 			#we want to place these at the start of each new row
@@ -282,7 +281,7 @@ class objSizer(wx.GridBagSizer):
 
 		sizer = wx.BoxSizer(orient)
 		if arg:
-			sizer.Add(wx.StaticText(self.parent, -1, arg))
+			sizer.Add(wx.StaticText(self.parent, -1, arg), flag=wx.ALIGN_CENTER)
 		sizer.Add(widget)
 
 		return sizer
