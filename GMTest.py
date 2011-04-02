@@ -5,7 +5,7 @@
 import guiMaster
 
 class TestObj:
-	def __init__(self, items = ['1', '2', '3', [1,2,3,4]], number = 1.23, wang = 1, chung=False, chong={'wee' : 'nis', 'pen' : 15}):
+	def __init__(self, items = ['1', '2', '3'], number = 1.23, wang = 1, chung=False, chong={'wee' : 'nis', 'pen' : 15}):
 		self.items = items
 		self.number = number
 		self.wang = wang
