@@ -1,6 +1,8 @@
 #guiMaster.py
 import wx
 import inspect
+import gm_cfg
+import array
 
 class FloatCtrl(wx.TextCtrl):
 	#extension of TextCtrl object to process floating point numbers
@@ -35,20 +37,21 @@ class objMaker:
 			self.sizer = objSizer(parent, target)
 
 
-class objSizer(wx.BoxSizer):
+class objSizer(wx.GridBagSizer):
 	def __init__(self, parent, target, recurse=True, *args, **kwargs):
 
 		#fun with python - get the attributes of an Object, see what the default values to ascertain what type of gui component it should be
-		wx.BoxSizer.__init__(self, *args, **kwargs)
-
-		self.SetOrientation(wx.VERTICAL)
-
+		wx.GridBagSizer.__init__(self, *args, **kwargs)
+		
+		#get the args from the right places
 		if inspect.isclass(target):
 			self.args = inspect.getargspec(target.__init__)
 		elif inspect.isfunction(target) or inspect.ismethod(target):
 			self.args = inspect.getargspec(target)
+			
 		else:
 			raise Exception("I only work with functions, classes and methods, dick.")
+
 
 		self.title = inspect.getfile(target)
 	
@@ -69,7 +72,12 @@ class objSizer(wx.BoxSizer):
 	def construct(self):
 		self.widgets = []
 
-		#get the arguments, create GUI components out of them
+		self.items = {}
+		self.items['args'] = []
+		self.items['init'] = None
+		self.items['methods'] = []
+
+		#get the arguments, create GUI components out of them, store them for later
 		for arg in self.argnames:
 			i = self.argnames.index(arg)
 			if len(self.defaults) > i:
@@ -78,35 +86,88 @@ class objSizer(wx.BoxSizer):
 				value = None
 
 			sizer = self.makeWidget(arg, value)
-
-			self.Add(sizer)
-
+			self.items['args'].append(sizer)
 		
+
 		#create the 'init' function button - this one is special because its args are already listed
 		b_id = 1
 
 		if inspect.isclass(self.target):
 			init = wx.Button(self.parent, b_id, 'Initialize')
-			self.Add(init)
+			self.items['init'] = init
 
 		self.functions = []
-		self.functionFrames = []
-		
+		self.buttons = []
+
 		if self.recurse:
 			for f in inspect.getmembers(self.target):
-				#if this is a user defined function, create a frame for its arguments
+				#if this is a user defined, public function, create a frame for its arguments
 				if inspect.isbuiltin(f[0]) or f[0].startswith('__'):
 					pass
 				else:
 					b_id += 1
 					self.functions.append(f[1])
 					button = wx.Button(self.parent, b_id, f[0])
-					self.Add(button)
+					button.Disable()
+					self.buttons.append(button)
 					functionFrame = objSizer(self.parent, f[1], recurse=False)
-					self.functionFrames.append(functionFrame)
-					self.Add(functionFrame)
+					self.items['methods'].append(functionFrame)
 
 		self.parent.Bind(wx.EVT_BUTTON, self.onButton)
+		self.layout()
+
+
+	def layout(self):
+		args = self.items['args']
+		init = self.items['init']
+		methods = self.items['methods']
+
+		numitems = len(args)
+
+		#if we're assembling the top level args
+		if self.recurse:
+			#we want a grid of args
+			if numitems % 2:
+				rows = numitems/2
+				cols = numitems/2 + 1
+			else:
+				rows = numitems/2
+				cols = numitems/2
+		#otherwise we just want a line of args
+		else:
+			cols = numitems
+			rows = 1
+
+
+		#rows += len(methods)
+
+		self.SetRows(rows)
+		self.SetCols(cols)
+
+		index = 0
+		for r in range(0, rows):
+			for c in range(0, cols):
+				if len(args) > index:
+					a = args[index]
+					self.Add(a, [r, c])
+
+				index += 1
+
+		if init:
+			cols += 1
+			self.SetCols(cols)
+			self.Add(init, [0, cols-1], span=[rows, 1], flag = wx.EXPAND)
+
+		count = rows
+		if len(methods):
+			rows += len(methods)
+			self.SetRows(rows)
+
+		for b, m in zip(self.buttons, methods):
+			#we want to place these at the start of each new row
+			self.Add(b, [count, 0])
+			self.Add(m, [count, 1], span=[1, cols - 1], flag=wx.EXPAND)			
+			count += 1
 
 	def onButton(self, event):
 		if event.GetId() == 1:
@@ -116,12 +177,17 @@ class objSizer(wx.BoxSizer):
 			for a, v in zip(self.argnames, values):
 				setattr(self.obj, a, v)
 
+			for b in self.buttons:
+				b.Enable()
+
 		else:
 			function = self.functions[event.GetId() - 2]
-			ff = self.functionFrames[event.GetId() - 2]
+			ff = self.items['methods'][event.GetId() - 2]
 			values = ff.deconstruct()
 			argString = ""
 			for a, v in zip(ff.argnames, values):
+				if type(v) == str:
+					v = "\"%s\"" % v
 				argString += ", %s=%s" % (a, v)
 			exec("function(self.obj%s)" % argString)
 
@@ -134,9 +200,10 @@ class objSizer(wx.BoxSizer):
 			if type(value) == list:
 				isDict = False
 				v = value[0]
-				if len(v) == 2:
-					if v[0].startswith('{'):
-						isDict = True
+				if type(v) == list:
+					if len(v) == 2:
+						if v[0].startswith('{'):
+							isDict = True
 
 				if isDict:
 					d = {}
@@ -191,10 +258,7 @@ class objSizer(wx.BoxSizer):
 			widget = FloatCtrl(self.parent, -1)
 			widget.SetFloat(value)
 		elif type(value) == list:
-			if len(value) <= 4:
-				widget = wx.BoxSizer(wx.HORIZONTAL)
-			else:
-				widget = wx.BoxSizer(wx.VERTICAL)
+			widget = wx.BoxSizer(wx.VERTICAL)
 
 			for v in value:
 				item = self.makeWidget(None, v, root=False)
