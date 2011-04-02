@@ -36,9 +36,20 @@ class objMaker:
 			self.frame = None
 			self.sizer = objSizer(parent, target)
 
+class cSizer(wx.Sizer):
+	def __init__(self, *args, **kwargs):
+		wx.Sizer.__init__(self, *args, **kwargs)
 
-class objSizer(wx.GridBagSizer):
-	def __init__(self, parent, target, recurse=True, *args, **kwargs):
+	def SetBackgroundColour(self, colour=[100, 100, 200]):
+		for c in self.GetChildren():
+			if c.IsWindow():
+				c.SetBackgroundColour(colour)
+			else:
+				c.SetBackgroundColour(colour)
+
+
+class objSizer(cSizer, wx.GridBagSizer):
+	def __init__(self, parent, target, recurse=True, color=[100, 100, 200], *args, **kwargs):
 
 		#fun with python - get the attributes of an Object, see what the default values to ascertain what type of gui component it should be
 		wx.GridBagSizer.__init__(self, *args, **kwargs)
@@ -51,7 +62,6 @@ class objSizer(wx.GridBagSizer):
 			
 		else:
 			raise Exception("I only work with functions, classes and methods, dick.")
-
 
 		self.title = inspect.getfile(target)
 	
@@ -85,8 +95,9 @@ class objSizer(wx.GridBagSizer):
 			else:
 				value = None
 
-			sizer = self.makeWidget(arg, value)
-			self.items['args'].append(sizer)
+			widget = objWidget(self.parent, arg, value, self)
+			self.widgets.append(widget)
+			self.items['args'].append(widget)
 		
 
 		#create the 'init' function button - this one is special because its args are already listed
@@ -142,11 +153,15 @@ class objSizer(wx.GridBagSizer):
 		self.SetCols(cols)
 
 		index = 0
+
+		colours = [[100, 200, 100], [100, 100, 200]]
+
 		for r in range(0, rows):
 			for c in range(0, cols):
 				if len(args) > index:
 					a = args[index]
-					self.Add(a, [r, c], flag = wx.ALL, border = 10)
+					self.Add(a, [r, c], flag = wx.ALL, border = 5)
+					colours.reverse()
 
 				index += 1
 
@@ -194,7 +209,9 @@ class objSizer(wx.GridBagSizer):
 		#get the values for each of the fields
 		values = []
 		for w in self.widgets:
-			value = self.readWidget(w)
+			value = w.read()
+			value = value[1]
+
 			#check if it's a string that wants to be a dict
 			if type(value) == list:
 				isDict = False
@@ -216,7 +233,46 @@ class objSizer(wx.GridBagSizer):
 
 		return values
 
-	def readWidget(self, w):
+class objWidget(wx.BoxSizer):
+	def __init__(self, parent, arg, value, orient = wx.VERTICAL, *args, **kwargs):
+		wx.BoxSizer.__init__(self, *args, **kwargs)
+		self.parent = parent
+
+		if type(value) == str:
+			widget = wx.TextCtrl(self.parent, -1, value)
+		elif type(value) == int:
+			widget = wx.SpinCtrl(self.parent, -1, str(value))
+		elif type(value) == float:
+			widget = FloatCtrl(self.parent, -1)
+			widget.SetFloat(value)
+		elif type(value) == list:
+			widget = wx.BoxSizer(wx.VERTICAL)
+			for v in value:
+				item = objWidget(self.parent, None, v)
+				widget.Add(item)
+		elif type(value) == bool:
+			widget = wx.CheckBox(self.parent, -1)
+			widget.SetValue(value)
+			orient = wx.HORIZONTAL
+		elif type(value) == dict:
+			widget = wx.BoxSizer(wx.VERTICAL)
+
+			for k in value.keys():
+				item = objWidget(self.parent, k, value[k], wx.HORIZONTAL)
+				widget.Add(item)
+
+		else:
+			widget = wx.TextCtrl(self.parent, -1, str(value))
+
+		if arg:
+			self.Add(wx.StaticText(self.parent, -1, arg), flag=wx.ALIGN_CENTER)
+		
+		self.Add(widget)
+				
+
+	def read(self, w=None):
+		if w==None:
+			w = self
 		wt = str(type(w))
 		wt = wt.split('.')[-1]
 		wt = wt.strip("'>")
@@ -231,58 +287,21 @@ class objSizer(wx.GridBagSizer):
 			value = w.GetFloat()
 		elif wt == 'CheckBox':
 			value = w.GetValue()
-		elif wt == 'BoxSizer':
+		elif wt == 'BoxSizer' or wt == 'objWidget':
 			if len(w.GetChildren()) > 1:
 				value = []
 				for b in w.GetChildren():
-					value.append(self.readWidget(b))
+					value.append(self.read(b))
 			else:
-				value = self.readWidget(w.GetItem(0))
+				value = self.read(w.GetItem(0))
 		elif wt == 'SizerItem':
 			if w.IsWindow():
-				value = self.readWidget(w.GetWindow())
+				value = self.read(w.GetWindow())
 			else:
-				value = self.readWidget(w.GetSizer())
+				value = self.read(w.GetSizer())
 		elif wt == 'StaticText':
 			value = "{" + w.GetLabel()
 
 		return value
 
-	def makeWidget(self, arg, value, orient=wx.VERTICAL, root = True):
-		if type(value) == str:
-			widget = wx.TextCtrl(self.parent, -1, value)
-		elif type(value) == int:
-			widget = wx.SpinCtrl(self.parent, -1, str(value))
-		elif type(value) == float:
-			widget = FloatCtrl(self.parent, -1)
-			widget.SetFloat(value)
-		elif type(value) == list:
-			widget = wx.BoxSizer(wx.VERTICAL)
-
-			for v in value:
-				item = self.makeWidget(None, v, root=False)
-				widget.Add(item)
-		elif type(value) == bool:
-			widget = wx.CheckBox(self.parent, -1)
-			widget.SetValue(value)
-			orient = wx.HORIZONTAL
-		elif type(value) == dict:
-			widget = wx.BoxSizer(wx.VERTICAL)
-
-			for k in value.keys():
-				item = self.makeWidget(k, value[k], wx.HORIZONTAL, root=False)
-				widget.Add(item)
-
-		else:
-			widget = wx.TextCtrl(self.parent, -1, str(value))
-
-		if root:
-			self.widgets.append(widget)
-
-		sizer = wx.BoxSizer(orient)
-		if arg:
-			sizer.Add(wx.StaticText(self.parent, -1, arg), flag=wx.ALIGN_CENTER)
-		sizer.Add(widget)
-
-		return sizer
 
