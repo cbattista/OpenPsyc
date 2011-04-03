@@ -5,7 +5,7 @@ import gm_cfg
 import array
 
 class FloatCtrl(wx.TextCtrl):
-	#extension of TextCtrl object to process floating point numbers
+	"""extension of TextCtrl object to process floating point numbers"""
 	def __init__(self, parent, *args, **kwargs):
 		wx.TextCtrl.__init__(self, parent, *args, **kwargs)
 
@@ -16,6 +16,7 @@ class FloatCtrl(wx.TextCtrl):
 		return float(self.GetValue())
 
 class objApp:
+	"""app the target object (this is what you call first)"""
 	def __init__(self, targetClass):
 		self.app = wx.App(False)
 		objMaker(None, targetClass)
@@ -24,7 +25,8 @@ class objApp:
 		self.app.MainLoop()
 
 class objMaker:
-	def __init__(self, parent, target, recurse=True, *args, **kwargs):
+	"""place a target object in either a frame or not a frame"""
+	def __init__(self, parent, target, *args, **kwargs):
 		if inspect.isclass(target) or inspect.isfunction(target):
 			frame = wx.Frame(None)
 			self.frame = frame
@@ -38,9 +40,14 @@ class objMaker:
 
 
 class objSizer(wx.GridBagSizer):
-	def __init__(self, parent, target, recurse=True, color=[100, 100, 200], *args, **kwargs):
-
-		#fun with python - get the attributes of an Object, see what the default values to ascertain what type of gui component it should be
+	"""Main Sizer for object visualization
+	objSizer will take a target object (class, function or method) and 
+	construct a gui based on its properties
+	"""
+	def __init__(self, parent, target, recurse=True, *args, **kwargs):
+		"""get the attributes of a target object, 
+		see what the default values to ascertain what type of gui component it should be
+		"""
 		wx.GridBagSizer.__init__(self, *args, **kwargs)
 		
 		#get the args from the right places
@@ -69,6 +76,7 @@ class objSizer(wx.GridBagSizer):
 		self.construct()
 
 	def construct(self):
+		"""create widgets from argument/attributes and values"""		
 		self.widgets = []
 
 		self.items = {}
@@ -121,6 +129,7 @@ class objSizer(wx.GridBagSizer):
 
 
 	def layout(self):
+		"""do the positioning of the contents of self.items"""
 		args = self.items['args']
 		init = self.items['init']
 		methods = self.items['methods']
@@ -187,6 +196,7 @@ class objSizer(wx.GridBagSizer):
 			count += 1
 
 	def onButton(self, event):
+		"""button handler, calling one of target's methods"""
 		if event.GetId() == 1:
 			values = self.deconstruct()
 			#now create an object from the values
@@ -209,7 +219,7 @@ class objSizer(wx.GridBagSizer):
 			exec("function(self.obj%s)" % argString)
 
 	def deconstruct(self):
-		#get the values for each of the fields
+		"""get the values for each of the fields"""
 		values = []
 		for w in self.widgets:
 			value = w.read()
@@ -237,7 +247,13 @@ class objSizer(wx.GridBagSizer):
 		return values
 
 class objWidget(wx.BoxSizer):
+	"""widget displaying an argument/attribute and a value
+	can handle nested items like lists and dictionaries
+	"""
 	def __init__(self, parent, arg, value, orient = wx.VERTICAL, *args, **kwargs):
+		"""on init objWidget examines the arg-value pair it 
+		receives and builds the appropriate gui component
+		"""
 		wx.BoxSizer.__init__(self, *args, **kwargs)
 		self.parent = parent
 
@@ -274,6 +290,10 @@ class objWidget(wx.BoxSizer):
 				
 
 	def read(self, w=None):
+		"""method read provides the value that item was storing, 
+		with the necessary recursion to reconstruct nested items
+		"""
+
 		if w==None:
 			w = self
 		wt = str(type(w))
@@ -304,6 +324,7 @@ class objWidget(wx.BoxSizer):
 				value = self.read(w.GetSizer())
 		elif wt == 'StaticText':
 			value = "{" + w.GetLabel()
+
 
 		return value
 
