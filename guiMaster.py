@@ -1,7 +1,6 @@
 #guiMaster.py
 import wx
 import inspect
-import gm_cfg
 import array
 
 class FloatCtrl(wx.TextCtrl):
