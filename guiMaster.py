@@ -1,7 +1,6 @@
 #guiMaster.py
 import wx
 import inspect
-import array
 
 class FloatCtrl(wx.TextCtrl):
 	"""extension of TextCtrl object to process floating point numbers"""
