@@ -105,7 +105,7 @@ class objSizer(wx.GridBagSizer):
 		if self.recurse:
 			for f in inspect.getmembers(self.target):
 				#if this is a user defined, public function, create a frame for its arguments
-				if inspect.isbuiltin(f[0]) or f[0].startswith('__'):
+				if inspect.isbuiltin(f[0]) or f[0].startswith('_'):
 					pass
 				else:
 					b_id += 1
@@ -129,13 +129,23 @@ class objSizer(wx.GridBagSizer):
 
 		#if we're assembling the top level args
 		if self.recurse:
-			#we want a grid of args
-			if numitems % 2:
-				rows = numitems/2
-				cols = numitems/2 + 1
-			else:
-				rows = numitems/2
+			#we want a nice grid of args
+			if numitems % 5 == 0:
+				cols = numitems/5
+				rows = numitems/cols
+			elif numitems % 4 == 0:
+				cols = numitems/4
+				rows = numitems/cols						
+			elif numitems % 3 == 0:
+				cols = numitems/3
+				rows = numitems/cols			
+			elif numitems % 2 == 0:
 				cols = numitems/2
+				rows = numitems/cols
+			else:
+				rows = numitems/3
+				cols = numitems/3 + 1 
+
 		#otherwise we just want a line of args
 		else:
 			cols = numitems
