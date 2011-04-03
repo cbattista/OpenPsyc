@@ -85,7 +85,7 @@ class objSizer(wx.GridBagSizer):
 			else:
 				value = None
 
-			p = wx.Panel(self.parent, -1)
+			p = wx.Panel(self.parent, -1, style = wx.RAISED_BORDER)
 			widget = objWidget(p, arg, value, self)
 			p.SetSizer(widget)
 			self.widgets.append(widget)
@@ -152,7 +152,7 @@ class objSizer(wx.GridBagSizer):
 				if len(args) > index:
 					a = args[index]
 					a.SetBackgroundColour(colours[0])
-					self.Add(a, [r, c], flag = wx.ALL | wx.EXPAND, border = 5)
+					self.Add(a, [r, c], flag = wx.EXPAND | wx.ALL, border = 5)
 					colours.reverse()
 
 				index += 1
@@ -164,13 +164,13 @@ class objSizer(wx.GridBagSizer):
 
 		count = rows + 1
 		if len(methods):
-			rows += len(methods) + 1
+			rows += len(methods) * 2
 			self.SetRows(rows + 1)
-			self.Add(wx.StaticLine(self.parent), pos=[count, 0], span=[1, cols], flag=wx.EXPAND)
-			count += 1
 
 		for b, m in zip(self.buttons, methods):
 			#we want to place these at the start of each new row
+			self.Add(wx.StaticLine(self.parent), pos=[count, 0], span=[1, cols], flag=wx.EXPAND)
+			count += 1
 			self.Add(m, [count, 0], span=[1, cols - 1], flag=wx.EXPAND)	
 			self.Add(b, [count, cols-1], flag=wx.EXPAND)
 		
