@@ -61,10 +61,13 @@ class objSizer(wx.GridBagSizer):
 		self.argnames.remove('self')
 		self.defaults = self.args[3]
 
+		self.nondefaults = len(self.argnames) - len(self.defaults)
+
 		while len(self.defaults) != len(self.argnames):
 			d = list(self.defaults)
 			d.insert(0, None)
 			self.defaults = tuple(d)
+
 
 		
 		#make the thing
@@ -216,11 +219,16 @@ class objSizer(wx.GridBagSizer):
 			count += 1
 
 	def initialize(self):
+		"""from values provided in the gui, 
+		create an instance of the target class (as self.obj),
+		enable class method buttons
+		"""
 		values = self.deconstruct()
 		#now create an object from the values
 		argString = "self.target("
 		for a in self.argnames:
 			argString += "%s=values[%s]," % (a, self.argnames.index(a))
+		argString = argString.rstrip(",")
 		argString += ")"
 		
 		self.obj = eval(argString)
@@ -244,7 +252,6 @@ class objSizer(wx.GridBagSizer):
 				index = argnames.index(self.name)				
 				defaults = list(self.parent.Parent.GetSizer().defaults)
 				defaults[index] = self.obj
-				print self.obj
 				defaults = tuple(defaults)
 				self.parent.Parent.GetSizer().defaults = defaults
 				self.parent.Parent.GetSizer().Clear(1)
@@ -306,7 +313,6 @@ class objWidget(wx.BoxSizer):
 		"""
 		wx.BoxSizer.__init__(self, *args, **kwargs)
 		self.parent = parent
-		print type(value)
 		if type(value) == str:
 			widget = wx.TextCtrl(self.parent, -1, value)
 		elif type(value) == int:
@@ -400,7 +406,6 @@ class objWidget(wx.BoxSizer):
 			value = w.value
 		elif wt == 'CodeBox':
 			value = w.Eval()			
-			print value
 
 		return value
 
