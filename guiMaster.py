@@ -84,6 +84,7 @@ class objSizer(wx.GridBagSizer):
 		self.items['done'] = None
 		self.items['return'] = None
 		self.items['methods'] = []
+		self.codeboxes = {}
 
 		#get the arguments, create GUI components out of them, store them for later
 		for arg in self.argnames:
@@ -101,6 +102,9 @@ class objSizer(wx.GridBagSizer):
 				self.classNames[str(btn.GetId())] = btn.arg
 				if btn.the_instance == None:
 					p.SetBackgroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_HIGHLIGHT))
+			if hasattr(widget, "cb"):
+				cb = widget.cb
+				self.codeboxes[str(cb.GetId())] = cb
 
 			p.SetSizer(widget)
 			self.widgets.append(widget)
@@ -175,7 +179,6 @@ class objSizer(wx.GridBagSizer):
 		self.SetCols(cols)
 
 		index = 0
-		colours = [wx.SystemSettings.GetColour(wx.SYS_COLOUR_HIGHLIGHT), wx.SystemSettings.GetColour(wx.SYS_COLOUR_ACTIVECAPTION)]
 
 		for r in range(0, rows):
 			for c in range(0, cols):
@@ -235,6 +238,14 @@ class objSizer(wx.GridBagSizer):
 		if self.parent.Parent:
 			self.items['done'].Enable()
 
+	def setDefault(self, value, arg):
+		"""sets a default value for a given arg"""
+		index = self.argnames.index(arg)
+		defaults = list(self.defaults)
+		defaults[index] = value
+		defaults = tuple(defaults)
+		self.defaults = defaults
+
 	def onButton(self, event):
 		"""button handler, calling one of target's methods"""
 		if event.GetId() == 1:
@@ -245,12 +256,7 @@ class objSizer(wx.GridBagSizer):
 				s = self.parent.Parent.GetSizer()
 				s.items['init'].Enable()
 				#self obj is the value of the initialized thing
-				argnames = self.parent.Parent.GetSizer().argnames
-				index = argnames.index(self.name)				
-				defaults = list(self.parent.Parent.GetSizer().defaults)
-				defaults[index] = self.obj
-				defaults = tuple(defaults)
-				s.defaults = defaults
+				s.setDefault(self.obj, self.name)
 				s.Clear(1)
 				s.construct()				
 				self.parent.Parent.Layout()
@@ -260,7 +266,12 @@ class objSizer(wx.GridBagSizer):
 
 		elif self.classes.has_key(str(event.GetId())):
 			objMaker(self.parent, self.classes[str(event.GetId())], name=self.classNames[str(event.GetId())])
-
+		elif self.codeboxes.has_key(str(event.GetId())):
+			cb = self.codeboxes[str(event.GetId())]
+			self.parent.GetSizer().setDefault(cb.Eval(), cb.arg)
+			self.parent.GetSizer().Clear(1)
+			self.parent.GetSizer().construct()
+			self.parent.Layout()
 		else:
 			function = self.functions[event.GetId() - 3]
 			ff = self.items['methods'][event.GetId() - 3]
@@ -334,7 +345,8 @@ class objWidget(wx.BoxSizer):
 				widget.Add(item)
 		elif str(type(value)) == "<type 'NoneType'>":
 			#just make a box for code that will be executed
-			widget = CodeBox(self.parent, -1, "")
+			widget = CodeBox(self.parent, arg)
+			self.cb = widget
 		else:
 			"""what to do when it's just some random friggin object?
 			make a button with the object's name and give the dang
