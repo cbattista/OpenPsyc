@@ -60,6 +60,12 @@ class objSizer(wx.GridBagSizer):
 		self.argnames = self.args[0]
 		self.argnames.remove('self')
 		self.defaults = self.args[3]
+
+		while len(self.defaults) != len(self.argnames):
+			d = list(self.defaults)
+			d.insert(0, None)
+			self.defaults = tuple(d)
+
 		
 		#make the thing
 		self.construct()
@@ -212,9 +218,12 @@ class objSizer(wx.GridBagSizer):
 	def initialize(self):
 		values = self.deconstruct()
 		#now create an object from the values
-		self.obj = self.target()
-		for a, v in zip(self.argnames, values):
-			setattr(self.obj, a, v)
+		argString = "self.target("
+		for a in self.argnames:
+			argString += "%s=values[%s]," % (a, self.argnames.index(a))
+		argString += ")"
+		
+		self.obj = eval(argString)
 
 		for b in self.buttons:
 			b.Enable()
@@ -297,7 +306,7 @@ class objWidget(wx.BoxSizer):
 		"""
 		wx.BoxSizer.__init__(self, *args, **kwargs)
 		self.parent = parent
-
+		print type(value)
 		if type(value) == str:
 			widget = wx.TextCtrl(self.parent, -1, value)
 		elif type(value) == int:
@@ -320,7 +329,9 @@ class objWidget(wx.BoxSizer):
 			for k in value.keys():
 				item = objWidget(self.parent, k, value[k], wx.HORIZONTAL)
 				widget.Add(item)
-
+		elif str(type(value)) == "<type 'NoneType'>":
+			#just make a box for code that will be executed
+			widget = CodeBox(self.parent, -1, "")
 		else:
 			"""what to do when it's just some random friggin object?
 			make a button with the object's name and give the dang
@@ -387,6 +398,9 @@ class objWidget(wx.BoxSizer):
 			value = "{" + w.GetLabel()
 		elif wt == 'Button':
 			value = w.value
+		elif wt == 'CodeBox':
+			value = w.Eval()			
+			print value
 
 		return value
 
