@@ -184,9 +184,9 @@ class objSizer(wx.GridBagSizer):
 			for c in range(0, cols):
 				if len(args) > index:
 					a = args[index]
-					a.SetBackgroundColour(colours[0])
+					#a.SetBackgroundColour(colours[0])
 					self.Add(a, [r, c], flag = wx.EXPAND | wx.ALL, border = 5)
-					colours.reverse()
+					#colours.reverse()
 
 				index += 1
 
@@ -217,9 +217,9 @@ class objSizer(wx.GridBagSizer):
 			count += 1
 
 	def initialize(self):
-		"""from values provided in the gui, 
-		create an instance of the target class (as self.obj),
-		enable class method buttons
+		"""create an instance of the target class (as self.obj)
+		from values provided in the gui
+		also enable class method buttons
 		"""
 		values = self.deconstruct()
 		#now create an object from the values
@@ -244,18 +244,19 @@ class objSizer(wx.GridBagSizer):
 
 		elif event.GetId() == 2:
 			if self.parent.Parent:
-				self.parent.Parent.GetSizer().items['init'].Enable()
+				s = self.parent.Parent.GetSizer()
+				s.items['init'].Enable()
 				#self obj is the value of the initialized thing
 				argnames = self.parent.Parent.GetSizer().argnames
 				index = argnames.index(self.name)				
 				defaults = list(self.parent.Parent.GetSizer().defaults)
 				defaults[index] = self.obj
 				defaults = tuple(defaults)
-				self.parent.Parent.GetSizer().defaults = defaults
-				self.parent.Parent.GetSizer().Clear(1)
-				self.parent.Parent.GetSizer().construct()				
+				s.defaults = defaults
+				s.Clear(1)
+				s.construct()				
 				self.parent.Parent.Layout()
-				self.parent.Parent.GetSizer().initialize()
+				s.initialize()
 				self.parent.Destroy()				
 
 
