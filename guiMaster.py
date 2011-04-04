@@ -61,12 +61,16 @@ class objSizer(wx.GridBagSizer):
 		self.argnames.remove('self')
 		self.defaults = self.args[3]
 
-		self.nondefaults = len(self.argnames) - len(self.defaults)
+		if self.argnames:
+			self.nondefaults = len(self.argnames) - len(self.defaults)
+			while len(self.defaults) != len(self.argnames):
+				d = list(self.defaults)
+				d.insert(0, None)
+				self.defaults = tuple(d)
+		else:
+			self.nondefaults = 0
 
-		while len(self.defaults) != len(self.argnames):
-			d = list(self.defaults)
-			d.insert(0, None)
-			self.defaults = tuple(d)
+
 
 
 		
