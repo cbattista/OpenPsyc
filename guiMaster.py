@@ -97,11 +97,12 @@ class objSizer(wx.GridBagSizer):
 			p = wx.Panel(self.parent, -1, style = wx.RAISED_BORDER)
 			widget = objWidget(p, arg, value, self)
 			if hasattr(widget, "btn"):
-				#n
 				btn = widget.btn
-				self.classes[str(btn.GetId())] = btn.target
-				self.classNames[str(btn.GetId())] = arg
-				inits.append(btn.state)
+				self.classes[str(btn.GetId())] = btn.the_class
+				self.classNames[str(btn.GetId())] = btn.arg
+				inits.append(btn.the_instance)
+				if btn.the_instance == None:
+					p.SetBackgroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_HIGHLIGHT))
 
 			p.SetSizer(widget)
 			self.widgets.append(widget)
@@ -115,7 +116,7 @@ class objSizer(wx.GridBagSizer):
 			self.items['done'] = done
 			done.Disable()
 			done.Hide()
-			if False in inits:
+			if None in inits:
 				self.items['init'].Disable()
 
 		b_id = 2
@@ -178,13 +179,14 @@ class objSizer(wx.GridBagSizer):
 		self.SetCols(cols)
 
 		index = 0
-		colours = [wx.SystemSettings.GetColour(wx.SYS_COLOUR_INACTIVECAPTION), wx.SystemSettings.GetColour(wx.SYS_COLOUR_ACTIVECAPTION)]
+		colours = [wx.SystemSettings.GetColour(wx.SYS_COLOUR_HIGHLIGHT), wx.SystemSettings.GetColour(wx.SYS_COLOUR_ACTIVECAPTION)]
 
 		for r in range(0, rows):
 			for c in range(0, cols):
 				if len(args) > index:
 					a = args[index]
-					#a.SetBackgroundColour(colours[0])
+					if index <= self.nondefaults-1:
+						a.SetBackgroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_HIGHLIGHT))
 					self.Add(a, [r, c], flag = wx.EXPAND | wx.ALL, border = 5)
 					#colours.reverse()
 
@@ -342,24 +344,8 @@ class objWidget(wx.BoxSizer):
 			make a button with the object's name and give the dang
 			thing a target attribute
 			"""
-			if str(type(value)) == "<type 'instance'>":
-				btarg = value.__class__
-				istate = True
-			else:
-				btarg = value
-				istate = False
-
-			btn = wx.Button(self.parent, -1, 'Edit')
-			btn.target = btarg
-			btn.state = istate
-			btn.value = value
-			if arg:
-				btn.arg = arg
-			else:
-				arg = ""
-			self.btn = btn
-			widget = btn
-
+			widget = ClassBox(self.parent, value, arg)
+			self.btn = widget.btn
 		if arg:
 			self.Add(wx.StaticText(self.parent, -1, arg), flag=wx.ALIGN_CENTER)
 
@@ -367,7 +353,7 @@ class objWidget(wx.BoxSizer):
 				
 	def read(self, w=None):
 		"""method read provides the value that item was storing, 
-		with the necessary recursion to reconstruct nested items
+		with the necessary unpackers to reconstruct nested items
 		"""
 
 		if w==None:
