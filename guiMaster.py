@@ -84,7 +84,6 @@ class objSizer(wx.GridBagSizer):
 		self.items['done'] = None
 		self.items['return'] = None
 		self.items['methods'] = []
-		inits = []
 
 		#get the arguments, create GUI components out of them, store them for later
 		for arg in self.argnames:
@@ -100,7 +99,6 @@ class objSizer(wx.GridBagSizer):
 				btn = widget.btn
 				self.classes[str(btn.GetId())] = btn.the_class
 				self.classNames[str(btn.GetId())] = btn.arg
-				inits.append(btn.the_instance)
 				if btn.the_instance == None:
 					p.SetBackgroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_HIGHLIGHT))
 
@@ -116,8 +114,6 @@ class objSizer(wx.GridBagSizer):
 			self.items['done'] = done
 			done.Disable()
 			done.Hide()
-			if None in inits:
-				self.items['init'].Disable()
 
 		b_id = 2
 
@@ -375,7 +371,7 @@ class objWidget(wx.BoxSizer):
 		w_dict['SizerItem'] = "unpackItem(w, self)"
 		w_dict['Button'] = "w.value"
 		w_dict['CodeBox'] = "w.Eval()"
-		
+		w_dict['ClassBox'] = "w.GetValue()"
 		if w_dict.has_key(wt):
 			value = eval(w_dict[wt])
 
