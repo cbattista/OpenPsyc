@@ -1,17 +1,7 @@
 #guiMaster.py
 import wx
 import inspect
-
-class FloatCtrl(wx.TextCtrl):
-	"""extension of TextCtrl object to process floating point numbers"""
-	def __init__(self, parent, *args, **kwargs):
-		wx.TextCtrl.__init__(self, parent, *args, **kwargs)
-
-	def SetFloat(self, value):
-		self.SetValue(str(value))
-
-	def GetFloat(self):
-		return float(self.GetValue())
+from gmHelpers import *
 
 class objApp:
 	"""app the target object (this is what you call first)"""
@@ -24,18 +14,19 @@ class objApp:
 
 class objMaker:
 	"""place a target object in either a frame or not a frame"""
-	def __init__(self, parent, target, *args, **kwargs):
+	def __init__(self, parent, target, name="", *args, **kwargs):
 		if inspect.isclass(target) or inspect.isfunction(target):
-			frame = wx.Frame(None)
+			frame = wx.Frame(parent)
 			self.frame = frame
 			sizer = objSizer(frame, target)
 			self.sizer = sizer
+			self.sizer.name = name
 			self.frame.SetSizerAndFit(sizer)
 			self.frame.Show()
 		elif inspect.ismethod(target):
 			self.frame = None
 			self.sizer = objSizer(parent, target)
-
+			self.sizer.name = name
 
 class objSizer(wx.GridBagSizer):
 	"""Main Sizer for object visualization
@@ -78,10 +69,15 @@ class objSizer(wx.GridBagSizer):
 		self.widgets = []
 
 		self.items = {}
+		self.classes = {}
+		self.classNames = {}
+
 		self.items['args'] = []
 		self.items['init'] = None
+		self.items['done'] = None
+		self.items['return'] = None
 		self.items['methods'] = []
-
+		inits = []
 
 		#get the arguments, create GUI components out of them, store them for later
 		for arg in self.argnames:
@@ -93,17 +89,29 @@ class objSizer(wx.GridBagSizer):
 
 			p = wx.Panel(self.parent, -1, style = wx.RAISED_BORDER)
 			widget = objWidget(p, arg, value, self)
+			if hasattr(widget, "btn"):
+				#n
+				btn = widget.btn
+				self.classes[str(btn.GetId())] = btn.target
+				self.classNames[str(btn.GetId())] = arg
+				inits.append(btn.state)
+
 			p.SetSizer(widget)
 			self.widgets.append(widget)
 			self.items['args'].append(p)
 		
-
 		#create the 'init' function button - this one is special because its args are already listed
-		b_id = 1
-
 		if inspect.isclass(self.target):
-			init = wx.Button(self.parent, b_id, 'Initialize')
+			init = wx.Button(self.parent, 1, 'Initialize')
 			self.items['init'] = init
+			done = wx.Button(self.parent, 2, 'Return')
+			self.items['done'] = done
+			done.Disable()
+			done.Hide()
+			if False in inits:
+				self.items['init'].Disable()
+
+		b_id = 2
 
 		self.functions = []
 		self.buttons = []
@@ -130,6 +138,7 @@ class objSizer(wx.GridBagSizer):
 		"""do the positioning of the contents of self.items"""
 		args = self.items['args']
 		init = self.items['init']
+		done = self.items['done']
 		methods = self.items['methods']
 
 		numitems = len(args)
@@ -175,9 +184,16 @@ class objSizer(wx.GridBagSizer):
 				index += 1
 
 		if init:
-			cols += 1
+			
 			self.SetCols(cols)
-			self.Add(init, [0, cols-1], span=[rows, 1], flag = wx.EXPAND)
+			if self.parent.Parent:
+				cols += 1
+				self.Add(init, [0, cols-1], span=[rows-1, 1], flag = wx.EXPAND)
+				done.Show()
+				self.Add(done, [rows-1, cols-1], flag=wx.EXPAND)
+			else:
+				cols += 1
+				self.Add(init, [0, cols-1], span=[rows, 1], flag = wx.EXPAND)
 
 		count = rows + 1
 		if len(methods):
@@ -193,21 +209,48 @@ class objSizer(wx.GridBagSizer):
 		
 			count += 1
 
+	def initialize(self):
+		values = self.deconstruct()
+		#now create an object from the values
+		self.obj = self.target()
+		for a, v in zip(self.argnames, values):
+			setattr(self.obj, a, v)
+
+		for b in self.buttons:
+			b.Enable()
+
+		if self.parent.Parent:
+			self.items['done'].Enable()
+
 	def onButton(self, event):
 		"""button handler, calling one of target's methods"""
 		if event.GetId() == 1:
-			values = self.deconstruct()
-			#now create an object from the values
-			self.obj = self.target()
-			for a, v in zip(self.argnames, values):
-				setattr(self.obj, a, v)
+			self.initialize()
 
-			for b in self.buttons:
-				b.Enable()
+		elif event.GetId() == 2:
+			if self.parent.Parent:
+				self.parent.Parent.GetSizer().items['init'].Enable()
+				#self obj is the value of the initialized thing
+				argnames = self.parent.Parent.GetSizer().argnames
+				index = argnames.index(self.name)				
+				defaults = list(self.parent.Parent.GetSizer().defaults)
+				defaults[index] = self.obj
+				print self.obj
+				defaults = tuple(defaults)
+				self.parent.Parent.GetSizer().defaults = defaults
+				self.parent.Parent.GetSizer().Clear(1)
+				self.parent.Parent.GetSizer().construct()				
+				self.parent.Parent.Layout()
+				self.parent.Parent.GetSizer().initialize()
+				self.parent.Destroy()				
+
+
+		elif self.classes.has_key(str(event.GetId())):
+			objMaker(self.parent, self.classes[str(event.GetId())], name=self.classNames[str(event.GetId())])
 
 		else:
-			function = self.functions[event.GetId() - 2]
-			ff = self.items['methods'][event.GetId() - 2]
+			function = self.functions[event.GetId() - 3]
+			ff = self.items['methods'][event.GetId() - 3]
 			values = ff.deconstruct()
 			argString = ""
 			for a, v in zip(ff.argnames, values):
@@ -279,14 +322,33 @@ class objWidget(wx.BoxSizer):
 				widget.Add(item)
 
 		else:
-			widget = wx.TextCtrl(self.parent, -1, str(value))
+			"""what to do when it's just some random friggin object?
+			make a button with the object's name and give the dang
+			thing a target attribute
+			"""
+			if str(type(value)) == "<type 'instance'>":
+				btarg = value.__class__
+				istate = True
+			else:
+				btarg = value
+				istate = False
+
+			btn = wx.Button(self.parent, -1, 'Edit')
+			btn.target = btarg
+			btn.state = istate
+			btn.value = value
+			if arg:
+				btn.arg = arg
+			else:
+				arg = ""
+			self.btn = btn
+			widget = btn
 
 		if arg:
 			self.Add(wx.StaticText(self.parent, -1, arg), flag=wx.ALIGN_CENTER)
-		
+
 		self.Add(widget)
 				
-
 	def read(self, w=None):
 		"""method read provides the value that item was storing, 
 		with the necessary recursion to reconstruct nested items
@@ -294,6 +356,7 @@ class objWidget(wx.BoxSizer):
 
 		if w==None:
 			w = self
+
 		wt = str(type(w))
 		wt = wt.split('.')[-1]
 		wt = wt.strip("'>")
@@ -322,7 +385,8 @@ class objWidget(wx.BoxSizer):
 				value = self.read(w.GetSizer())
 		elif wt == 'StaticText':
 			value = "{" + w.GetLabel()
-
+		elif wt == 'Button':
+			value = w.value
 
 		return value
 
