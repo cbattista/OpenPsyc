@@ -51,9 +51,7 @@ class objSizer(wx.GridBagSizer):
 		self.title = inspect.getfile(target)
 	
 		self.target = target
-
 		self.recurse = recurse
-
 		self.parent = parent
 
 		#get the arguments and the default values
@@ -70,10 +68,6 @@ class objSizer(wx.GridBagSizer):
 		else:
 			self.nondefaults = 0
 
-
-
-
-		
 		#make the thing
 		self.construct()
 
@@ -383,33 +377,20 @@ class objWidget(wx.BoxSizer):
 		wt = wt.strip("'>")
 
 		value = wt
-
-		if wt == 'TextCtrl':
-			value = w.GetValue()
-		elif wt == 'SpinCtrl':
-			value = int(w.GetValue())
-		elif wt == 'FloatCtrl':
-			value = w.GetFloat()
-		elif wt == 'CheckBox':
-			value = w.GetValue()
-		elif wt == 'BoxSizer' or wt == 'objWidget':
-			if len(w.GetChildren()) > 1:
-				value = []
-				for b in w.GetChildren():
-					value.append(self.read(b))
-			else:
-				value = self.read(w.GetItem(0))
-		elif wt == 'SizerItem':
-			if w.IsWindow():
-				value = self.read(w.GetWindow())
-			else:
-				value = self.read(w.GetSizer())
-		elif wt == 'StaticText':
-			value = "{" + w.GetLabel()
-		elif wt == 'Button':
-			value = w.value
-		elif wt == 'CodeBox':
-			value = w.Eval()			
+		w_dict = {}
+		w_dict['TextCtrl'] = "w.GetValue()"
+		w_dict['SpinCtrl'] = "int(w.GetValue())"
+		w_dict['FloatCtrl'] = "w.GetFloat()"
+		w_dict['CheckBox'] = "w.GetValue()"
+		w_dict['StaticText'] = "\"{\" + w.GetLabel()"
+		w_dict['BoxSizer'] = "unpackSizer(w, self)"
+		w_dict['objWidget'] = "unpackSizer(w, self)"
+		w_dict['SizerItem'] = "unpackItem(w, self)"
+		w_dict['Button'] = "w.value"
+		w_dict['CodeBox'] = "w.Eval()"
+		
+		if w_dict.has_key(wt):
+			value = eval(w_dict[wt])
 
 		return value
 
