@@ -139,6 +139,8 @@ class objSizer(wx.GridBagSizer):
 					self.items['methods'].append(functionFrame)
 
 		self.parent.Bind(wx.EVT_BUTTON, self.onButton)
+		self.parent.Bind(wx.EVT_TEXT, self.onText)
+		
 		self.layout()
 
 
@@ -245,6 +247,17 @@ class objSizer(wx.GridBagSizer):
 		defaults[index] = value
 		defaults = tuple(defaults)
 		self.defaults = defaults
+
+	def onText(self, event):
+		for cb in self.codeboxes.values():
+			if cb.GetTextId() == event.GetId():
+				try: 
+					cb.Eval()
+					if cb.Eval():
+						cb.btn.Enable()
+				except:		
+					cb.btn.Disable()
+
 
 	def onButton(self, event):
 		"""button handler, calling one of target's methods"""
