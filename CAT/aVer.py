@@ -38,7 +38,7 @@ calcProblems = []
 memProblems = []
 
 problemTime = 1
-blankTime = 1.5
+blankTime = 2
 
 for r in posts.find(q):
 	ns = [r['n1'], r['n2']]
