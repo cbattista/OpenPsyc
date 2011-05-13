@@ -17,6 +17,8 @@ import sys
 import os
 import copy
 
+from CATHelpers import *
+
 #suckas need to changes this on they home computaz
 sys.path.append('/home/cogdev/code/OpenPsyc')
 
@@ -48,15 +50,6 @@ screen.parameters.bgcolor = (0, 0, 0)
 pygame.font.init()
 
 framerate = 60
-
-#helper functions
-def frame_to_time(f):
-    t = float(f) / float(framerate)
-    return t
-
-def time_to_frame(t):
-    f = t * framerate
-    return f
 
 #problem control, SRBox voice trigger
 def problem_controller(f_abs):
@@ -108,9 +101,7 @@ def strategy_controller(f_abs):
 			elif ord(x) == 16:
 				misfire = 1
 				
-			
-
-
+		
 #experimenter grading, space & escape
 def key_handler(event):
 	if event.key == K_ESCAPE:
