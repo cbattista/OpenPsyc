@@ -25,6 +25,11 @@ sys.path.append('/home/cogdev/code/OpenPsyc')
 from experiments import printWord, printText
 import subject
 
+#always verify when there are this many problems in the heap
+checkHeap = 10
+
+#always verify when one bin is full and there is this many problems in the heap
+fullHeap = 5
 
 ###COLLECT SUBJECT INFO
 myArgs = sys.argv
@@ -173,13 +178,14 @@ while len(memProblems) < trials or len(calcProblems) < trials:
 
 	badProblem = True
 
-	#if the heap is half full, definitely check
-	if len(problemHeap) >= (trials/3):
+	#if the heap is at the threshold, definitely check it
+	if len(problemHeap) >= (checkHeap):
 		verify = 1
-	elif len(calcProblems) >= trials and len(problemHeap) > 3:
+	#if we have all our calc problems and there are a few in the heap
+	elif len(calcProblems) >= trials and len(problemHeap) > fullHeap:
 		verify = 1
 	#if we have all our memory problems and there are a few in the heap 
-	elif len(memProblems) >= trials and len(problemHeap) > 3:
+	elif len(memProblems) >= trials and len(problemHeap) > fullHeap:
 		verify = 1
 
 	#if we have enough temps to make a full set of calcs
@@ -190,7 +196,7 @@ while len(memProblems) < trials or len(calcProblems) < trials:
 		verify = 1
 
 	#if the heap is getting pretty full, increase odds of checking
-	elif len(problemHeap) >= (trials/4):
+	elif len(problemHeap) >= (checkHeap + (checkHeap/2)):
 		verify = random.choice([0, 1])
 	#if we have all our calc problems and there are a few in the heap
 	#otherwise give it 1/4 odds of checking
