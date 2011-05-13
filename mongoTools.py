@@ -180,6 +180,7 @@ class ReadTable:
 
 
 		for line in lines[self.startLine+1:]:
+			print line
 			line = line.split(',')
 			line = map(strip, line)
 			row = {}
@@ -187,6 +188,7 @@ class ReadTable:
 				value = line[index[k]]
 				if value:
 					row[k] = StringToType(value)
+			print row
 
 			self.posts.insert(row)
 		print "The contents of %s have been uploaded" % (csv)

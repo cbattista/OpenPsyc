@@ -126,14 +126,14 @@ strategies = sShuffler.shuffle()
 
 
 #generate texts
-strat2 = "Please describe your strategy"
-stratText, stratPort = printWord(screen, strat2, 60, (255, 255, 255), h_anchor = 1)
+strat2 = "\n\nPlease describe your strategy"
+stratText, stratPort = printText(screen, strat2, 60, (255, 255, 255))
 	
 strategy = ""
 RT = 0
 ACC = 0
 
-fixText, fixCross = printWord(screen, '', 60, (255, 255, 255), h_anchor = 2.5)
+fixText, fixCross = printText(screen, '', 60, (255, 255, 255))
 
 print "PRESS SPACE TO START"
 
@@ -176,10 +176,11 @@ for dist, side, strategy in zip(dists, sides, strategies):
 		L = distractor
 		R = solution
 	
-	probText, probPort = printWord(screen, problem, 60, (255, 255, 255), h_anchor = 1.5)
-	lt, l = printWord(screen, L, 60, (255, 255, 255), h_anchor = 0.5)
-	rt, r = printWord(screen, R, 60, (255, 255, 255), h_anchor = 3)	
-	fixText, fixCross = printWord(screen, '', 60, (255, 255, 255), h_anchor = 1.5)
+	probText, probPort = printWord(screen, problem, 60, (255, 255, 255))
+
+	vp, vr = printText(screen, "%s                                                 %s" % (L, R), 60, (255, 255, 255))
+
+	fixText, fixCross = printText(screen, '', 60, (255, 255, 255))
 
 	#BLOCK 1 - PROBLEM, BLANK & POSSIBLE SOLUTIONS
 	problem = Presentation(go_duration=(2, 'seconds'), viewports=[probPort])
@@ -188,7 +189,7 @@ for dist, side, strategy in zip(dists, sides, strategies):
 	p3 = Presentation(go_duration=(0.5, 'seconds'), viewports=[fixCross])
 	p3.go()
 
-	p = Presentation(go_duration=('forever', ), viewports=[l, r])
+	p = Presentation(go_duration=('forever', ), viewports=[vr])
 	p.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, key_handler)]  
 	p.go()
 

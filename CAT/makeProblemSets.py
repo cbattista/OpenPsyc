@@ -41,6 +41,7 @@ for s in strategies:
 
 	result = posts.find({'strategy' : s, 's_id' : int(number), 'verified' : 1})
 	for r in result:
+		print r
 		n1 = r['n1']
 		n2 = r['n2']
 		ns = [n1, n2]
