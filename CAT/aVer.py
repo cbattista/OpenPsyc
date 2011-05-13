@@ -37,6 +37,9 @@ q['s_id'] = number
 calcProblems = []
 memProblems = []
 
+problemTime = 1
+blankTime = 1.5
+
 for r in posts.find(q):
 	ns = [r['n1'], r['n2']]
 	trained = r['trained']
@@ -183,10 +186,10 @@ for dist, side, strategy in zip(dists, sides, strategies):
 	fixText, fixCross = printText(screen, '', 60, (255, 255, 255))
 
 	#BLOCK 1 - PROBLEM, BLANK & POSSIBLE SOLUTIONS
-	problem = Presentation(go_duration=(2, 'seconds'), viewports=[probPort])
+	problem = Presentation(go_duration=(problemTime, 'seconds'), viewports=[probPort])
 	problem.go()
 
-	p3 = Presentation(go_duration=(0.5, 'seconds'), viewports=[fixCross])
+	p3 = Presentation(go_duration=(blankTime, 'seconds'), viewports=[fixCross])
 	p3.go()
 
 	p = Presentation(go_duration=('forever', ), viewports=[vr])
