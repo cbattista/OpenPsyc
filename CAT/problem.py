@@ -1,5 +1,45 @@
+class Problems:
+	def __init__(self, problems=[], sid=666, exp=""):
+		"""class which holds a list of Problem objects, args are:
+		problems = list of problems
+		sid = who these problems belong to
+		exp = experiment in which these problems were collected
+		"""
+		self.problems = problems
+		self.sid = sid
+		self.exp = exp
+
+	def getStrat(self, strat):
+		problems = []
+		for p in self.problems:
+			for h in p.history:
+				if h.response['strat'] == strat:
+					problems.append([ns, history])
+
+		return problems
+
+	def getMeasures(self, measure, strat):
+		measures = []
+
+		problems = getStrat(strat)
+		for p in problems:
+			measures.append(p[1][measure])		
+		
+		return measures
+
+	def getSolutions(self, strat):
+		solutions = []
+
+		problems = getStrat(strat)
+		for p in problems:
+			#this is not ideal as it only supports the addition operation, but will do for now
+			solutions.append(sum(p[0]))
+
+		return solutions
+
+
 class Problem:
-	def __init__(self, ns, history=[], keys=['ACC', 'RT', 'strat', 'task']):
+	def __init__(self, ns, history=[], keys=['trial', 'RT', 'ACC', 'strat', 'task', 'misfire']):
 		"""class which represents an arithmetic problem, args are:
 		ns = digits involved
 		history = a list of responses dicts to the problem
@@ -15,6 +55,10 @@ class Problem:
 		self.keys.sort()
 		self.analyze()
 		self.suggestDistractors()
+
+	def __str__(self):
+		output = "%s %s %s" % (self.ns[0], self.operation, self.ns[1])
+		return output
 
 	def addResponse(self, response={}):
 		"""add a ppt response to this problem"""
@@ -68,14 +112,4 @@ class Problem:
 			distractors.append(10)
 
 		self.distractors = distractors
-
-
-x = Problem([5, 6])
-print x.distractors
-
-y = Problem([28, 42])
-print y.distractors
-
-z = Problem([13, 13])
-print z.distractors
 
