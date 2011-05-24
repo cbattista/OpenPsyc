@@ -9,31 +9,102 @@ class Problems:
 		self.sid = sid
 		self.exp = exp
 
-	def getStrat(self, strat):
+	def append(self, problem):
+		"""add a problem to the list of problems
+		if the problem is already in the list, add to its history
+		"""
+		inList = False
+		for p in self.problems:
+			if problems.ns == p.ns:
+				p.addResponse(problem.history)
+				inList = True
+				break
+
+		if not inList:
+			self.problems.append(problem)
+
+	def getByStrat(self, strat, ACC=1):
+		"""get all [ns, history] for a particular strategy, with the option of correct or 			incorrect, args are:
+		strat = string strategy
+		ACC = int accuracy
+		"""
 		problems = []
 		for p in self.problems:
 			for h in p.history:
-				if h.response['strat'] == strat:
+				if h['strat'] == strat and h['ACC'] == ACC:
 					problems.append([ns, history])
 
 		return problems
 
+	
+
+	def getVerified(self, strat):
+		"""get verified problems for a particular strategy
+		"""
+		problems = []
+
+		for p in self.problems:
+			strats = []
+			#if the problem has more than 2 responses
+			if len(p.history) > 1:
+				for h in p.history:
+					if h['ACC']:
+						strats.append(h['strat'])
+				#if all those responses are the desired strategy
+				if set(strats) == set(strat):
+					problems.append(p)
+
+		return problems
+
+	def getTemp(self, strat):
+		"""get temporary problems for a particular strategy
+		"""
+		problems = []
+
+		for p in self.problems:
+			#if there's only one response in the history and its strategy matches
+			if len(p.history) == 1 and p.history[0]['strat'] == strat and p.history[0]['ACC']:
+				problems.append(p)
+
+		return problems
+
+	def getErratic(self):
+		"""get erratically reported problems
+		"""
+		problems = []
+		for p in self.problems:
+			strats = []
+			#if the problem has more than 2 responses
+			if len(p.history) > 1:
+				for h in p.history:
+					#if the problem was answered correctly
+					if h['ACC']:
+						strats.append(h['strat'])
+				#if there's more than one strategy in the set
+				if len(set(strats)) > 1:
+					problems.append(p)
+
+		return problems
+
 	def getMeasures(self, measure, strat):
+		"""get a particular measure for a particular strategy
+		"""
 		measures = []
 
-		problems = getStrat(strat)
+		problems = getByStrat(strat)
 		for p in problems:
 			measures.append(p[1][measure])		
 		
 		return measures
 
 	def getSolutions(self, strat):
+		"""get the solutions for a particular strategy
+		"""
 		solutions = []
 
-		problems = getStrat(strat)
+		problems = getVerified(strat)
 		for p in problems:
-			#this is not ideal as it only supports the addition operation, but will do for now
-			solutions.append(sum(p[0]))
+			solutions.append(p.solution)
 
 		return solutions
 
