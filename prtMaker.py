@@ -11,7 +11,7 @@ import pickle
 def StringToType(value):
 	if value.isdigit():
 		val = int(value)
-
+		
 	elif value.count('.') == 1:
 		val = value.split('.')
 		if val[0].isdigit() and val[1].isdigit():
@@ -40,7 +40,7 @@ class PRTFile:
 			self.makePRT()
 			self.writePRT()
 
-		elif source == "spreadsheet":
+		elif source == "eprime":
 			self.processEPrime(theFile)
 			self.makePRTDict()
 			self.setColors()
@@ -103,9 +103,10 @@ class PRTFile:
 
 			info[key] = StringToType(value)
 
+		rows = []
+
+			
 		i1 = lines.index("*** LogFrame Start ***")
-
-
 
 		dataLines = lines[i1 + 1:]
 
@@ -114,6 +115,9 @@ class PRTFile:
 
 		first = True
 
+		
+		row = {}
+		
 		for d in dataLines:
 			hindex = 0
 			if d.count(":"):
@@ -127,15 +131,19 @@ class PRTFile:
 					VARs[k] = []
 					hindex = hindex + 1
 
-				try:
-					VARs[k].append(StringToType(value))
-				except:
-					pass
+				row[k] = StringToType(value)
+				if k == "Procedure":
+					print value
+					
+
 
 			elif d == "*** LogFrame End ***":
 				first = False
+				rows.append(row)
+				row = {}
 
 		self.VARs = VARs
+		self.rows = rows
 		self.fname = "%s_%s_%s.prt" % (info['Subject'], info['Experiment'], info['Session'])
 
 	def loadFromDB(self, dbName, table, s_id="Subject"):
@@ -177,15 +185,8 @@ class PRTFile:
 
 
 	def makePRTDict(self):
-		d={}
-		d["+"]="Addition"
-		d["-"]="Subtraction"
-		d["1"]="Correct"
-		d["2"]="Incorrect"
-		d[''] = ""
-		d["Arithmetic Verification Control"] = "AVC"
-		d["Arithmetic Verification"] = "AV"
-
+		catch=["6cr","6c2r", "6r", "6tr"]
+		null = ["6c", "6c2", "6", "6t"]
 		VARs = self.VARs
 
 		prtDict = {}
@@ -193,32 +194,45 @@ class PRTFile:
 		AVCcount = 1
 		if self.checkErrors:
 			prtDict['Error'] = []
-		for operation, cresp, onset, jitter, ACC, exp in zip(VARs['Operation'], VARs['Problem.CRESP'], VARs['Problem.OnsetTime'], VARs['Jitter'], VARs['Problem.ACC'], VARs['Experiment']):
+	
+		lastRow = self.rows[-1]
+		wait = lastRow['Wait1.RTTime']
 
+		for row in self.rows:
+
+			if row.has_key('Deviant'):
+				deviant = row['Deviant']
+			else:
+				deviant = "0"
+				
+			if row.has_key('Procedure'):
+				proc = row['Procedure']
+			else:
+				proc = "NOPROC"
+				
+			if row.has_key('DevTrial.OnsetTime'):
+				onset = row['DevTrial.OnsetTime'] - wait
+			else:
+				onset = ""
+		
+
+			print deviant
 			if onset != "":
 
-				exp = d[exp]
+				if deviant[0] in catch:
+					myCond="catch"
+				elif deviant[0] in null:
+					myCond = "null"					
+				else:
+					deviant = int(deviant[0][0])
+					if deviant==1 or deviant==3:
+						myCond="0.5"
+					elif deviant==4 or deviant==9:
+						myCond="0.66"
+					elif deviant==5 or deviant==8:
+						myCond="0.75"
 
-				if exp == "AV":
-
-					if AVcount == 1:
-						AVsub = onset - self.onset
-					onset = onset - AVsub
-					AVcount += 1
-
-				elif exp == "AVC":
-					if AVCcount == 1:
-						AVCsub = onset - self.onset				
-					onset = onset - AVCsub
-					AVCcount += 1
-
-				offset = onset + 2000
-				if (cresp == '') or ACC == 0:
-					myCond = '%s_Error' % exp
-				else:                
-					myCond = d[operation] + "_" + d[str(cresp)]
-
-				myCond = myCond.lstrip('_')
+				offset=onset+1600
 
 				myString = "%s %s" % (onset, offset)
 
@@ -316,7 +330,7 @@ class PRTFile:
 
 settings = """FileVersion:       1\n\nResolutionOfTime:   msec\n\nExperiment:         Child_SCE\n\nBackgroundColor:    0 0 0\nTextColor:          255 255 255\nTimeCourseColor:    255 255 255\nTimeCourseThick:    3\nReferenceFuncColor: 0 0 80\nReferenceFuncThick: 3\n\n"""
 
-#theFiles = glob.glob("*.txt")
-
-prtFile = PRTFile(["Gavin", "AV"], source="database", settings=settings, checkErrors=False)
-
+theFiles = glob.glob("*.txt")
+for theFile in theFiles:
+	prtFile = PRTFile(theFile, source="eprime", settings=settings, checkErrors=False)
+print theFiles
