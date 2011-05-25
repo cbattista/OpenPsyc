@@ -9,6 +9,15 @@ class Problems:
 		self.sid = sid
 		self.exp = exp
 
+		#counts of the different problems we are holding
+		self.counts = {'verified' : {}, 'temp' : {}, 'erratic' : 0}
+
+		#list of the different problems that we have		
+		self.verifieds = {}
+		self.temps = {}
+		self.erratics = {}
+		self.incorrects = {}
+
 	def append(self, problem):
 		"""add a problem to the list of problems
 		if the problem is already in the list, add to its history
@@ -18,13 +27,99 @@ class Problems:
 			if problems.ns == p.ns:
 				p.addResponse(problem.history)
 				inList = True
+				self.classify(p)
 				break
 
+		#if it's not in the list, then let's add it
 		if not inList:
 			self.problems.append(problem)
+			self.classify(problem)
+
+	def classify(self, problem):
+		#first let's see if it's incorrect
+		classification = ""
+
+		lists = ["incorrects", "erratics", "temps", "verifieds"]
+
+		if self.isInccorect(problem):
+			self.incorrects[str(problem)] = problem
+			classification = "incorrects"
+		elif self.isErratic(problem):
+			self.erratic[str(problem)] = problem
+			classification = "erratics"
+		elif self.isTemporary(problem):
+			self.temps[str(problem)] = problem
+			classification = "temps"
+		elif self.isVerified(problem):
+			classification = "verifieds"
+			self.verifieds[str(problem)] = problem
+		else:
+			classification = "unknown"
+
+		if classification != "unknown":
+			lists.remove(classification)
+
+		#now check for the existence of the problem in the other lists and remove if necessary
+		for l in lists:
+			the_list = eval("self.%s" % l)
+			if the_list.has_key(str(problem)):
+				del the_list[str(problem)]
+
+
+	def isIncorrect(self, problem):
+		"""determine whether a problem has ever
+		been answered incorrectly
+		"""
+		ACCs = []
+		for h in p.history:
+			ACCs.append(h['ACC'])
+
+		if set(ACCs) != set(['1']):
+			return True
+		else:
+			return False
+
+	def isErratic(self, problem):
+		"""determine whether strategy report for a 
+		problem is erratic or not
+		returns True/False
+		"""
+		strats = []
+		for h in p.history:
+			strats.append(h['strat'])
+			ACCs.append(h['ACC'])
+
+		if len(set(strats)) > 1 and (set(ACCs) == set(['1'])):
+			return True
+		else:
+			return False
+	
+	def isTemporary(self, problem):
+		"""determine whether this is a 'temporary' problem
+		i.e., whether it's only been answered once (and that answer was correct)
+		return True/False
+		"""
+		if len(p.history) == 1 and p.history['ACC'] == 1:
+			return True
+		else:
+			return False
+
+	def isVerified(self, problem):
+		"""determine whether this problem has had its strategy verified
+		returns true/false and if true the verified strategy
+		"""
+		strats = []
+		for h in p.history:
+			strats.append(h['strat'])
+			ACCs.append(h['ACC'])
+
+		if len(set(strats)) == 1 and (set(ACCs) == set(['1'])):
+			return True
+		else:
+			return False
 
 	def getByStrat(self, strat, ACC=1):
-		"""get all [ns, history] for a particular strategy, with the option of correct or 			incorrect, args are:
+		"""get all [ns, history] for a particular strategy, with the option of correct or incorrect, args are:
 		strat = string strategy
 		ACC = int accuracy
 		"""
@@ -35,8 +130,6 @@ class Problems:
 					problems.append([ns, history])
 
 		return problems
-
-	
 
 	def getVerified(self, strat):
 		"""get verified problems for a particular strategy
@@ -54,6 +147,8 @@ class Problems:
 				if set(strats) == set(strat):
 					problems.append(p)
 
+		self.counts['verified'][strat] = len(problems)
+
 		return problems
 
 	def getTemp(self, strat):
@@ -65,6 +160,8 @@ class Problems:
 			#if there's only one response in the history and its strategy matches
 			if len(p.history) == 1 and p.history[0]['strat'] == strat and p.history[0]['ACC']:
 				problems.append(p)
+		
+		self.counts['temp'][strat] = len(problems)
 
 		return problems
 
@@ -84,6 +181,7 @@ class Problems:
 				if len(set(strats)) > 1:
 					problems.append(p)
 
+		self.counts['erratic'] = len(problems)
 		return problems
 
 	def getMeasures(self, measure, strat):
