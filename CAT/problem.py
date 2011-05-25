@@ -10,8 +10,8 @@ class Problems:
 		self.exp = exp
 
 		#counts of the different problems we are holding
-		self.counts = {'verified' : {}, 'temp' : {}, 'erratic' : 0}
-
+		self.counts = {'verifieds' : {}, 'temps' : {}, 'erratics' : {}, 'incorrects' : {}}
+		
 		#list of the different problems that we have		
 		self.verifieds = {}
 		self.temps = {}
@@ -36,25 +36,40 @@ class Problems:
 			self.classify(problem)
 
 	def classify(self, problem):
+		"""for a given problem, add it to the appropriate list
+		and also update the list of counts 
+		"""
+
 		#first let's see if it's incorrect
 		classification = ""
 
 		lists = ["incorrects", "erratics", "temps", "verifieds"]
 
+		strat = problem.history[0]['strat']
+
 		if self.isInccorect(problem):
-			self.incorrects[str(problem)] = problem
 			classification = "incorrects"
 		elif self.isErratic(problem):
-			self.erratic[str(problem)] = problem
 			classification = "erratics"
+			#in this case, the strat may be composed of multiple strategies
+			strats = ""
+			for h in problem.history:
+				strat = "%s-%s" % (strat, h['strat'])
+			strat = strat.lstrip("-")
 		elif self.isTemporary(problem):
-			self.temps[str(problem)] = problem
 			classification = "temps"
 		elif self.isVerified(problem):
 			classification = "verifieds"
-			self.verifieds[str(problem)] = problem
 		else:
 			classification = "unknown"
+
+
+		if classification != "unknown":
+			#add the problem to the appropriate list
+			the_list = eval("self.%s['%s']" % (classification, strat))
+			the_list.append(problem)
+			#increment the appropriate count
+			exec("self.counts['%s']['%s'] += 1" % (classification, strat))
 
 		if classification != "unknown":
 			lists.remove(classification)
@@ -62,8 +77,38 @@ class Problems:
 		#now check for the existence of the problem in the other lists and remove if necessary
 		for l in lists:
 			the_list = eval("self.%s" % l)
-			if the_list.has_key(str(problem)):
+			
+			if the_list[strat].has_key(str(problem)):
 				del the_list[str(problem)]
+				#decrement the appropriate count
+				exec("self.counts['%s']['%s'] -= 1" % (l, strat))
+
+	def getCounts(self):
+		#get the amount of incorrects and erratics (easy)
+		self.counts['incorrects'] = len(self.incorrects)
+		self.counts['erratics'] = len(self.erratics)
+		#get the amount of temps and verifieds for each strategy (harder)
+	
+		td = {}
+		for p in self.temps:
+			strat = p.history[0]['strat']
+			if td.has_key(strat):
+				td[strat] += 1
+			else:
+				td[strat] = 1
+
+		self.counts['temps'] = td
+
+		vd = {}
+		for p in self.verifieds:
+			strat = p.history[0]['strat']
+			if vd.has_key(strat):
+				vd[strat] += 1
+			else:
+				vd[strat] = 1
+
+		self.counts['']
+
 
 
 	def isIncorrect(self, problem):
