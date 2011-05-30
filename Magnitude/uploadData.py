@@ -39,7 +39,7 @@ fullList = []
 #TRAINED CALC PROBLEMS
 
 s = 'calc'
-t_num = 20
+t_num = 20 
 
 result = posts.find({'strategy' : s, 's_id' : int(number), 'verified' : 1})
 for r in result:
@@ -62,6 +62,8 @@ for r in result:
 	"""
 
 quit = 0
+
+print fullList
 
 while not quit:
 	if len(probList) >= t_num:

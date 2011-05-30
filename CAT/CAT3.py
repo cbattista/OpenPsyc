@@ -17,12 +17,19 @@ import sys
 import os
 import copy
 
+from CATHelpers import *
+
 #suckas need to changes this on they home computaz
 sys.path.append('/home/cogdev/code/OpenPsyc')
 
 from experiments import printWord, printText
 import subject
 
+#always verify when there are this many problems in the heap
+checkHeap = 10
+
+#always verify when one bin is full and there is this many problems in the heap
+fullHeap = 5
 
 ###COLLECT SUBJECT INFO
 myArgs = sys.argv
@@ -35,6 +42,10 @@ try:
 except:
 	trials = 3
 
+#we know from previous experience that to eventually get the desired number of trials, we need to overshoot the total amount
+trials = trials / .7
+trials = int(trials)
+
 #create subject
 subject = subject.Subject(number, 1, 1, "pre_pro")
 
@@ -44,15 +55,6 @@ screen.parameters.bgcolor = (0, 0, 0)
 pygame.font.init()
 
 framerate = 60
-
-#helper functions
-def frame_to_time(f):
-    t = float(f) / float(framerate)
-    return t
-
-def time_to_frame(t):
-    f = t * framerate
-    return f
 
 #problem control, SRBox voice trigger
 def problem_controller(f_abs):
@@ -104,9 +106,7 @@ def strategy_controller(f_abs):
 			elif ord(x) == 16:
 				misfire = 1
 				
-			
-
-
+		
 #experimenter grading, space & escape
 def key_handler(event):
 	if event.key == K_ESCAPE:
@@ -178,13 +178,14 @@ while len(memProblems) < trials or len(calcProblems) < trials:
 
 	badProblem = True
 
-	#if the heap is half full, definitely check
-	if len(problemHeap) >= (trials/3):
+	#if the heap is at the threshold, definitely check it
+	if len(problemHeap) >= (checkHeap):
 		verify = 1
-	elif len(calcProblems) >= trials and len(problemHeap) > 3:
+	#if we have all our calc problems and there are a few in the heap
+	elif len(calcProblems) >= trials and len(problemHeap) > fullHeap:
 		verify = 1
 	#if we have all our memory problems and there are a few in the heap 
-	elif len(memProblems) >= trials and len(problemHeap) > 3:
+	elif len(memProblems) >= trials and len(problemHeap) > fullHeap:
 		verify = 1
 
 	#if we have enough temps to make a full set of calcs
@@ -195,7 +196,7 @@ while len(memProblems) < trials or len(calcProblems) < trials:
 		verify = 1
 
 	#if the heap is getting pretty full, increase odds of checking
-	elif len(problemHeap) >= (trials/4):
+	elif len(problemHeap) >= (checkHeap + (checkHeap/2)):
 		verify = random.choice([0, 1])
 	#if we have all our calc problems and there are a few in the heap
 	#otherwise give it 1/4 odds of checking

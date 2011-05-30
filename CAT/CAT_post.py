@@ -142,7 +142,7 @@ strategy = None
 
 trial = 1
 
-fixText, fixCross = printWord(screen, '', 60, (255, 255, 255), h_anchor = 2.5)
+fixText, fixCross = printText(screen, '', 60, (255, 255, 255))
 
 print "PRESS SPACE TO START"
 
@@ -177,10 +177,10 @@ for p in problems:
 	ACC = 1
 
 	#generate texts
-	strat2 = "Please describe your strategy"
+	strat2 = "\n\nPlease describe your strategy"
 
-	stratText, stratPort = printWord(screen, strat2, 60, (255, 255, 255), h_anchor = 1.3, v_anchor = 0.75)
-	expText, expPort = printWord(screen, problem, 60, (255, 255, 255), h_anchor = 2)
+	stratText, stratPort = printText(screen, strat2, 60, (255, 255, 255))
+	expText, expPort = printText(screen, problem, 60, (255, 255, 255))
 
 	#BLOCK 1 - Problem & RESPONSE
 
