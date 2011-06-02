@@ -12,11 +12,15 @@ class Problems:
 		#counts of the different problems we are holding
 		self.counts = {'verifieds' : {}, 'temps' : {}, 'erratics' : {}, 'incorrects' : {}}
 		
+		#list of the strats that we have available
+		self.strats = []
+
 		#list of the different problems that we have		
 		self.verifieds = {}
 		self.temps = {}
 		self.erratics = {}
 		self.incorrects = {}
+		self.ns = {}
 
 	def append(self, problem):
 		"""add a problem to the list of problems
@@ -35,6 +39,15 @@ class Problems:
 			self.problems.append(problem)
 			self.classify(problem)
 
+	def addStrat(self, strat):
+		if strat not in self.strats:
+			self.strats.append(strat)
+			self.verifieds[strat] = []
+			self.temps[strat] = []
+			self.erratics[strat] = []
+			self.incorrects[strat] = []
+			self.ns[strat] = []
+
 	def classify(self, problem):
 		"""for a given problem, add it to the appropriate list
 		and also update the list of counts 
@@ -45,9 +58,12 @@ class Problems:
 
 		lists = ["incorrects", "erratics", "temps", "verifieds"]
 
+		print "*********"
+		print problem.history
+
 		strat = problem.history[0]['strat']
 
-		if self.isInccorect(problem):
+		if self.isIncorrect(problem):
 			classification = "incorrects"
 		elif self.isErratic(problem):
 			classification = "erratics"
@@ -63,25 +79,25 @@ class Problems:
 		else:
 			classification = "unknown"
 
+		self.addStrat(strat)
+
 
 		if classification != "unknown":
 			#add the problem to the appropriate list
 			the_list = eval("self.%s['%s']" % (classification, strat))
 			the_list.append(problem)
-			#increment the appropriate count
-			exec("self.counts['%s']['%s'] += 1" % (classification, strat))
+			ns[classification][strat].append(problem.ns)
 
 		if classification != "unknown":
 			lists.remove(classification)
 
 		#now check for the existence of the problem in the other lists and remove if necessary
 		for l in lists:
-			the_list = eval("self.%s" % l)
-			
+			the_list = eval("self.%s['%s']" % (l, strat))
 			if the_list[strat].has_key(str(problem)):
 				del the_list[str(problem)]
-				#decrement the appropriate count
-				exec("self.counts['%s']['%s'] -= 1" % (l, strat))
+				#remove the ns from the ns list
+				ns['%s' % strat].remove(problem.ns)
 
 	def getCounts(self):
 		#get the amount of incorrects and erratics (easy)
@@ -116,7 +132,7 @@ class Problems:
 		been answered incorrectly
 		"""
 		ACCs = []
-		for h in p.history:
+		for h in problem.history:
 			ACCs.append(h['ACC'])
 
 		if set(ACCs) != set(['1']):
@@ -253,7 +269,7 @@ class Problems:
 
 
 class Problem:
-	def __init__(self, ns, history=[], keys=['trial', 'RT', 'ACC', 'strat', 'task', 'misfire']):
+	def __init__(self, ns, history={}, keys=['trial', 'RT', 'ACC', 'strat', 'task', 'misfire']):
 		"""class which represents an arithmetic problem, args are:
 		ns = digits involved
 		history = a list of responses dicts to the problem
@@ -264,7 +280,7 @@ class Problem:
 		self.ns = ns
 		self.ns.sort()
 		self.operation = "+" #eventually we'll adjust amend this class to work with other operands
-		self.history = history
+		self.history = [history]
 		self.keys = keys
 		self.keys.sort()
 		self.analyze()
