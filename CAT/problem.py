@@ -1,3 +1,5 @@
+import copy
+
 class Problems:
 	def __init__(self, problems=[], sid=666, exp=""):
 		"""class which holds a list of Problem objects, args are:
@@ -9,18 +11,15 @@ class Problems:
 		self.sid = sid
 		self.exp = exp
 
+		self.pKeys = ['verifieds', 'temps', 'erratics', 'incorrects']
+
 		#counts of the different problems we are holding
-		self.counts = {'verifieds' : {}, 'temps' : {}, 'erratics' : {}, 'incorrects' : {}}
+		self.counts = dict.fromkeys(self.pKeys, {})
+		self.ns = dict.fromkeys(self.pKeys, {})
+		self.sorted = dict.fromkeys(self.pKeys, {})
 		
 		#list of the strats that we have available
 		self.strats = []
-
-		#list of the different problems that we have		
-		self.verifieds = {}
-		self.temps = {}
-		self.erratics = {}
-		self.incorrects = {}
-		self.ns = {}
 
 	def append(self, problem):
 		"""add a problem to the list of problems
@@ -42,11 +41,10 @@ class Problems:
 	def addStrat(self, strat):
 		if strat not in self.strats:
 			self.strats.append(strat)
-			self.verifieds[strat] = []
-			self.temps[strat] = []
-			self.erratics[strat] = []
-			self.incorrects[strat] = []
-			self.ns[strat] = []
+			for k in self.pKeys:			
+				self.sorted[k][strat] = []
+				self.ns[k][strat] = []
+				self.counts[k][strat] = 0
 
 	def classify(self, problem):
 		"""for a given problem, add it to the appropriate list
@@ -56,7 +54,7 @@ class Problems:
 		#first let's see if it's incorrect
 		classification = ""
 
-		lists = ["incorrects", "erratics", "temps", "verifieds"]
+		lists = copy.deepcopy(self.pKeys)
 
 		print "*********"
 		print problem.history
@@ -83,21 +81,20 @@ class Problems:
 
 
 		if classification != "unknown":
-			#add the problem to the appropriate list
-			the_list = eval("self.%s['%s']" % (classification, strat))
-			the_list.append(problem)
-			ns[classification][strat].append(problem.ns)
+			self.ns[classification][strat].append(problem.ns)
+			self.counts[classification][strat] += 1
+			self.sorted[classification][strat].append(problem)
 
 		if classification != "unknown":
 			lists.remove(classification)
 
 		#now check for the existence of the problem in the other lists and remove if necessary
 		for l in lists:
-			the_list = eval("self.%s['%s']" % (l, strat))
-			if the_list[strat].has_key(str(problem)):
-				del the_list[str(problem)]
+			if problem in self.sorted[l][strat]:
+				self.sorted[l][strat].remove(problem)
 				#remove the ns from the ns list
-				ns['%s' % strat].remove(problem.ns)
+				self.ns[l][strat].remove(problem.ns)
+				self.counts[l][strat] -= 1
 
 	def getCounts(self):
 		#get the amount of incorrects and erratics (easy)

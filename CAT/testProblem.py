@@ -18,7 +18,6 @@ while trial < 50:
 	history = {'trial':trial, 'strat':strat, 'ACC':ACC, 'RT':RT, 'misfire':misfire}
 	p = problem.Problem(ns, history)
 	problems.append(p)
-	print p, history
 
 class TestProblems(unittest.TestCase):
 	def setUp(self):
@@ -27,7 +26,7 @@ class TestProblems(unittest.TestCase):
 	def testClassify(self):
 		p = problems[0]
 		self.Problems.classify(p)
-		self.assertTrue(p['strat'] in self.Problems.strats)
+		self.assertTrue(p.history[0]['strat'] in self.Problems.strats)
 
 	"""
 	def testAppend(self):
