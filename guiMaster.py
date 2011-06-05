@@ -27,6 +27,14 @@ class objMaker:
 			self.frame = None
 			self.sizer = objSizer(parent, target)
 			self.sizer.name = name
+		elif inspect.ismodule(target):
+			for name, obj in inspect.getmembers(target):
+				if inspect.isclass(obj):
+					print name, obj
+					objMaker(None, obj, name)
+		else:
+			pass
+			
 
 class objSizer(wx.GridBagSizer):
 	"""Main Sizer for object visualization
@@ -39,6 +47,8 @@ class objSizer(wx.GridBagSizer):
 		"""
 		wx.GridBagSizer.__init__(self, *args, **kwargs)
 		
+		print target
+
 		#get the args from the right places
 		if inspect.isclass(target):
 			self.args = inspect.getargspec(target.__init__)
@@ -48,6 +58,7 @@ class objSizer(wx.GridBagSizer):
 		else:
 			raise Exception("I only work with functions, classes and methods, dick.")
 
+
 		self.title = inspect.getfile(target)
 	
 		self.target = target
@@ -56,8 +67,11 @@ class objSizer(wx.GridBagSizer):
 
 		#get the arguments and the default values
 		self.argnames = self.args[0]
-		self.argnames.remove('self')
+		if 'self' in self.argnames:
+			self.argnames.remove('self')
 		self.defaults = self.args[3]
+		if not self.defaults:
+			self.defaults = ()
 
 		if self.argnames:
 			self.nondefaults = len(self.argnames) - len(self.defaults)

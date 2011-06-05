@@ -37,7 +37,7 @@ sub = subject.Subject(number, experiment = "dots")
 trials = 240
 
 #of the total trials, how many do you want to run (good for testing), put -1 for all
-subtrials = -1
+subtrials = 30
 
 #blocks to be displyaed
 blocks = ["sequential", "paired", "overlapping"]
@@ -48,7 +48,7 @@ breakText = "Time for a break.\nPRESS SPACE TO CONTINUE."
 break_trial = 60
 
 #total duration of each dot array, in seconds
-dot_duration = 0.75
+dot_duration = .750
 
 #total duration of each mask
 mask_dur = 0.5
@@ -169,7 +169,13 @@ def keyFunc(event):
 	correct = cDict[color]
 	
 	sub.inputData(trial, "RT", RT)
-	
+	if event.key == pygame.locals.K_LCTRL:
+		sub.inputData(trial, "key", "L_CTRL")
+	elif event.key == pygame.locals.K_RCTRL:
+		sub.inputData(trial, "key", "R_CTRL")	
+	else:
+		sub.inputData(trial, "key", "NA")
+
 	if not pressed:
 
 		if block == "paired":
@@ -318,6 +324,8 @@ for block in blockOrder:
 		sub.inputData(trial, "yellowButton", yellowB)
 		sub.inputData(trial, "blueButton", blueB)
 
+		print color
+		
 		if block == "overlapping":
 			phase = ""
 			fname = "%s_%s_%s_%s_%s_OL.bmp" % (ratio, n1, color, size, exemplar)

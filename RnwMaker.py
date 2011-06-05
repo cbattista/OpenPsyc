@@ -44,7 +44,6 @@ class RnwMaker:
 	def ChangeLevel(self, lvl):
 		self.lvl = lvl
 
-		
 	def AddSection(self, factors, prefix = "Effect of"):
 		lvl = self.lvl
 
@@ -62,27 +61,41 @@ class RnwMaker:
 		output = """\\begin{figure}\n\\begin{center}\n<<echo=false,fig=true>>==\n%s\n@\n\end{center}\n\caption{%s}\n\end{figure}\n""" % (figure, caption)
 		return output
 
-
 	def compareMeans(self, factors, measure, datFile, caption="", interpret = False):
-		output, dfName = self.AddAnalysis(factors, measure, datFile)
+		output, dfName, fName, tag = self.AddAnalysis(factors, measure, datFile)
 
 		model = "%s~%s+Error(s_id/%s)" % (measure, fName, fName)
+		#model = "%s~%s" % (measure, fName)
 		output += "%s{%s}\n" % (tag, self.human.translate(measure).title())
 		
 		if interpret:
 			output += self.human.interpret(factors, measure, model, datFile)
 
-		caption += ".  %s" % self.human.hypothesize(factors, measure)
+		#contin, paired = self.human.describeFactor(factors)
 
-		output += """<<>>==\n%sModel = aov(%s, data=%s)\nsummary(%sModel)\n@\n""" % (measure, model, dfName, measure)
+		caption += ".  %s" % self.human.hypothesize(fName, measure)
 
+		output += """<<>>==\n%sModel = aov(%s, data=%s)\nsummary(%sModel)\n""" % (measure, model, dfName, measure)
+		output += """tapply(%s$%s, %s$%s, mean)\n""" % (dfName, measure, dfName, factors)
+		output += """tapply(%s$%s, %s$%s, sd)\n""" % (dfName, measure, dfName, factors)
+		output += "print(model.tables(%sModel,\"means\"),digits=4)\n" % (measure)
+		output += "print(var(%s$%s),digits=4)\n" % (dfName, measure)
+		output += """@\n"""
+
+		#if measure == "count" or type(factors) == list:
 		figure = """boxplot(%s~%s,data=%s, ylab="%s", main="%s")""" % (measure, fName, dfName, self.human.translate(measure),self.human.translate(fName))
+		#elif contin:
+		#	figure = """plot(tapply(%s$%s, %s$%s, mean), xlab="%s", ylab="%s", main="%s")\nlines(tapply(%s$%s, %s$%s, mean)) """ % (dfName, measure, dfName, factors, self.human.translate(factors), self.human.translate(measure),self.human.translate(fName), dfName, measure, dfName, factors)
+		#else:
+		#	figure = """barplot(tapply(%s$%s, %s$%s, mean), ylab="%s", main="%s")""" % (dfName, measure, dfName, factors, self.human.translate(measure),self.human.translate(fName))
+
+
 		output += self.addFigure(figure, caption)
 
 		self.f.write(output)		
 
 	def correlate(self, factors, measure, datFile, caption=""):	
-		output, dfName, factors = self.AddAnalysis(factors, measure, datFile)
+		output, dfName, factors, tag = self.AddAnalysis(factors, measure, datFile)
 
 		sig, r, p = self.human.correlate(measure[0], measure[1], datFile)
 
@@ -120,6 +133,7 @@ class RnwMaker:
 
 		output += "<<echo=false>>=\n"
 		output += "library(car)\n"
+		#output += "library(gplots)\n"
 		for f in factors:
 			dfName = dfName + "_" + f
 			fName = fName + "*" + f
@@ -138,7 +152,7 @@ class RnwMaker:
 				
 		output += "%s = read.table(\"%s\", header=TRUE, sep=\",\")\n@\n" % (dfName, datFile)
 
-		return output, dfName, factors
+		return output, dfName, fName, tag
 		
 	def Close(self, execute=False):
 		self.f.write("\end{document}\n")

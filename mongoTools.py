@@ -92,6 +92,8 @@ class RecursiveTrim:
 			self.avg = summary[0]['avg']
 			self.std = summary[0]['std']
 			self.count = summary[0]['ccount']
+			if str(self.count) == "NA" or str(self.count) == "nan":
+				self.count = 0
 
 			if self.maxSD:
 
@@ -185,12 +187,15 @@ class ReadTable:
 			line = map(strip, line)
 			row = {}
 			for k in VARs.keys():
-				value = line[index[k]]
-				if value:
-					row[k] = StringToType(value)
-			print row
-
+				try:
+					value = line[index[k]]
+					if value:
+						row[k] = StringToType(value)
+				except:
+					pass
 			self.posts.insert(row)
+	
+
 		print "The contents of %s have been uploaded" % (csv)
 
 	def processEPrime(self, txt):
@@ -420,10 +425,16 @@ class WriteTable:
 			rows = self.posts.find(c)
 
 			if rows.count() ==1:
+
 				row = self.posts.find_one(c)
-				avg = row[m]
+
+				if m == "count":
+					avg = 1
+				else:
+					avg = row[m]
  				std = "NA"
 				count = 1
+
 			elif rows.count() > 1:
 				trimmer = RecursiveTrim(rows, m, self.maxSD)
 				avg, std, count = trimmer.GetValues()
@@ -442,12 +453,12 @@ class WriteTable:
 		for m in meas:
 			total = 0.
 			for i in items:
-				total = total + i['%s_count' % m]
+				total += total + i['%s_count' % m]
 
 			#add a frequency field to the items
 			for i in items:
 				if total > 0:
-					i['%s_freq' % m] = i['%s_count' %m] / total * 100.
+					i['%s_freq' % m] = i['%s_count' % m] / total * 100.
 				else:
 					i['freq_%s' % m] = "NA"
 
@@ -473,7 +484,10 @@ class WriteTable:
 						valid = 1
 			
 				if valid:
+					print headers
 					for h in headers:
+						if h == "count":
+							h = "count_count"
 						value = str(row[h])
 						if value != "NA":
 							line = "%s,%s" % (line, row[h])

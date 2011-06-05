@@ -1,6 +1,7 @@
 #human.py
 from mongoTools import MongoAdmin
 import random
+import statistician
 
 class Human():
 	#Human class - turns weird computer talk into normal person talk
@@ -10,7 +11,7 @@ class Human():
 		self.hypotheses = ["It was expected that ", "It was predicted that "]
 		self.interpret = ["This is probably because", "This could be due to "]
 		self.acceptnull = ["Contrary to the hypothesis, however ", "Against prediction,", "Contrary to expectation, "]
-		self.rejectnull = ["This turned out to be the case.", "This is as expected.", "This is as  predicted."]
+		self.rejectnull = ["This was as expected.", "This was as  predicted."]
 		self.signs = {'>' : 'greater than', '<' : 'less than', '==' : 'equal to'}
 
 	def translate(self, term):
@@ -46,14 +47,16 @@ class Human():
 				if s in hyp:
 					frags = hyp.split(s)
 					output += "%s %s %s %s %s %s" % (self.translate(frags[0]), measure, tenses[tense], self.signs[s], self.translate(frags[1]), measure) 
-		return output			
+					#now we should sort the fragments in ascending order and ditch the sign
+					if s == ">":
+						frags.reverse()
+
+		return output, s, frags			
 	
 
-	def hypothesize(self, factors, measure, condition={}, result=""):
+	def hypothesize(self, factors, measure, model, dataFile, condition={}, result=""):
 		posts= self.db.getTable('hypotheses').posts		
 		
-		print factors
-
 		q = condition
 		for f in factors:		
 			q[f] = unicode('TARGET')
@@ -67,14 +70,14 @@ class Human():
 		if row:
 			hyp = random.choice(self.hypotheses)
 			if row.has_key(measure):
-				assertion = self.parseAssertion(row[measure], measure)	
+				assertion, s, frags = self.parseAssertion(row[measure], measure)	
 				output += "%s%s.\n" % (hyp, assertion)
-
+				nerd = statistician.Statistician(dataFile)
+				result = nerd.compareMeans(model, frags, factors, measure)		
 				if result:
-					if row[measure] == result:
-						output += random.choice(self.rejectnull)
-					else:
-						output += random.choice(self.acceptnull) + result + "."
+					output += result
 
+		output += "\n"
+		print output
 		return output
 	
