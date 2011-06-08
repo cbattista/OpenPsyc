@@ -24,18 +24,12 @@ class TestProblems(unittest.TestCase):
 	def setUp(self):
 		self.Problems = problem.Problems(DB)
 
-	
-	def testClassify(self):
-		p = problems[0]
-		self.Problems.classify(p)
-		self.assertTrue(p['strat'] in self.Problems.strats)
-
-	"""
 	def testAppend(self):
 		for p in problems:
 			self.Problems.append(p)
-		assertTrue(len(self.Problems.problems) >= 1)
-	"""
+		self.assertTrue(self.Problems.count() >= 1)
+
+
 
 if __name__ == '__main__':
     unittest.main()

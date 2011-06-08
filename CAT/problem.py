@@ -35,20 +35,23 @@ class Problems:
 		"""add a problem to the list of problems
 		if the problem is already in the list, add to its history
 		"""
-		row = self.posts.find({'id' : str(problem)})
+		row = self.posts.find_one({'id' : str(problem)})
 
 		inList = False
 
 		if row:
-			row['history'].append(problem.response)
+			h = row['history']
+			for r in problem.row['history']:
+				h.append(r)
+			row['history'] = h
 			self.posts.save(row)
 		else:
+			row = {}
 			row['id'] = str(problem)
 			for k in problem.row.keys():
 				row[k] = problem.row[k]
 			row['sid'] = self.sid
 			row['exp'] = self.exp
-			print row
 			self.posts.save(row)		
 
 		self.classify(row['id'])
@@ -60,9 +63,6 @@ class Problems:
 
 		#first let's see if it's incorrect
 		classification = ""
-
-		for row in self.posts.find():
-			print row
 
 		row = self.posts.find_one({'id' : str(p_id)})
 
@@ -91,8 +91,8 @@ class Problems:
 
 		self.posts.save(row)
 
-	def count(self, query):
-		c = self.posts.count(query)
+	def count(self, query={}):
+		c = self.posts.find(query).count()
 		return c
 
 	def isIncorrect(self, history):
