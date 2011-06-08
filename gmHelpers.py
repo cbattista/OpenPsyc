@@ -1,9 +1,12 @@
 import wx
+from wx.lib import sheet
+
 
 class FloatCtrl(wx.TextCtrl):
 	"""extension of TextCtrl object to process floating point numbers"""
-	def __init__(self, parent, *args, **kwargs):
+	def __init__(self, parent, value, *args, **kwargs):
 		wx.TextCtrl.__init__(self, parent, *args, **kwargs)
+		self.SetFloat(value)
 
 	def SetFloat(self, value):
 		self.SetValue(str(value))
@@ -24,8 +27,9 @@ class CodeBox(wx.BoxSizer):
 		self.Add(self.btn)
 		
 	def Eval(self):
-		if self.text.GetValue():
-			return eval(self.text.GetValue())
+		t = self.text.GetValue()		
+		if t:
+			return eval(t)
 		else:
 			return None	
 

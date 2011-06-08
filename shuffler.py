@@ -207,7 +207,7 @@ class MultiShuffler:
 #BEHOLD THE MIGHTY SHUFFLER CLASS - needs cleanup but is damn useful
 class Shuffler:
 	"""args are list of items, number of trials, allowable repeats and ratio of items (an n-tuple with index corresponding to item)"""
-	def __init__(self, items, trials, repeats=2, ratio=[]):
+	def __init__(self, items=[1,2,3,4], trials=16, repeats=2, ratio=[]):
 		self.items = items
 		self.trials = trials
 		self.itemList = []
@@ -327,7 +327,7 @@ class Shuffler:
 
 #a class to make a relatively balanced stimulus list from a set of items, which forbids repeats of item i within r items
 class ListShuffler():
-	def __init__(self, items, length, repeats=3):
+	def __init__(self, items=[1,2,3,4], length=24, repeats=3):
 		if length % len(items):
 			raise Exception("hey meathead I can't make a list of %s things out of %s items" % (length, len(items)))			
 		else:
@@ -360,3 +360,6 @@ class ListShuffler():
 
 		return self.finalList
 
+
+	def printList(self):
+		print self.finalList

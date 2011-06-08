@@ -6,7 +6,7 @@ import copy
 from euclid import euclid
 		   
 class ShapeMaster:
-	def __init__(self, box, shapesize, shape= 'circle', sizemeasure='area', sizectrl = 'SC', density=5, separation=20, colors =[[255, 255, 255]], overlay = False, bgcolor = [0,0,0], control='', logFile = "dot_log.csv"):
+	def __init__(self, box=[640, 640], area = [0.3, 0.3], shape= 'circle', sizemeasure='area', sizectrl = 'SC', density=5, separation=25, colors =[[255, 255, 255]], overlay = False, bgcolor = [0,0,0], outline = [255, 255, 255], control='', logFile = "dot_log.csv", drawOutline=False):
 		self.box = box
 		self.logFile = logFile
 		self.ctl_iters = 1
@@ -14,7 +14,7 @@ class ShapeMaster:
 		#if one item size provided
 		#otherwise don't size control
 		self.shapesize = []
-		for d in shapesize:
+		for d in self.shapesize:
 			if sizemeasure == 'area':
 				self.shapesize.append(box[0] * box[1] * d)
 			elif sizemeasure == 'perimeter':
@@ -27,13 +27,13 @@ class ShapeMaster:
 		
 		self.colors = colors
 		self.bgcolor = bgcolor
+		self.outline = outline
 		self.control = control
 		self.controlValue = False
+		self.drawOutline = drawOutline
 
-	def shapeSolver(self, n, size, MIN=.2, MAX=.8, control = ''):
-
-		#input - size, number of dots
-		#stimuli - radius of each dot
+	def _shapeSolver(self, n=1, size=100, MIN=.2, MAX=.8, control = ''):
+		#input - number of dots
 		#solver algo
 		#1 - calculate average size
 		#2 - generate a random value which is a portion of that size
@@ -62,7 +62,7 @@ class ShapeMaster:
 			else:
 				mySizes = []
 				while not mySizes:
-					mySizes = self.shapeSolver(n, size)
+					mySizes = self._shapeSolver(n, size)
 				mySizes = mySizes[0]
 		else:
 			mySizes = [size]
@@ -90,7 +90,7 @@ class ShapeMaster:
 				controlSizes = []
 				iters = 100
 				for i in range(iters):
-					mySizes, controlSize = self.shapeSolver(n, size)
+					mySizes, controlSize = self._shapeSolver(n, size)
 					controlSizes.append(controlSize)
 				self.controlValue = sum(controlSizes) / iters
 				print "CONTROL VALUE : %s" % self.controlValue
@@ -120,13 +120,13 @@ class ShapeMaster:
 			return mySizes, sum(controlSizes)
 
 
-	def generateLists(self, ns, control=''):
+	def _generateLists(self, ns=[1, 2], control=''):
 		#generates the area lists, depending on the ns parameters
 		sizeList = []
 		sepShapes = []
 		if type(ns) == int:
 			while not sizeList:
-				sizeList = self.shapeSolver(n, self.shapesize, control=control)
+				sizeList = self._shapeSolver(n, self.shapesize, control=control)
 				
 		elif type(ns) == list:
 			areaSums = []
@@ -136,7 +136,7 @@ class ShapeMaster:
 			for n, size in zip(ns, self.shapesize):
 				sizes = []
 				while not sizes:
-					sizes, controlSize = self.shapeSolver(n, size, control=control)
+					sizes, controlSize = self._shapeSolver(n, size, control=control)
 
 				if self.sizemeasure == 'area':
 					areaSums.append(int(sum(sizes)))
@@ -163,10 +163,9 @@ class ShapeMaster:
 			print "Just what the hell do you think you're doing"
 
 		self.controlValue = False
-		print sizeList, sepShapes
 		return sizeList, sepShapes
 
-	def shapeArranger(self, ns):
+	def shapeArranger(self, ns=[1,2]):
 		#1 - place a dot box in a random location which does not overlap the edges
 		#2 - place a dot in a random location which does not overlap the edges or any other dot boxes
 		#3 - repeat until no dots are left
@@ -179,7 +178,7 @@ class ShapeMaster:
 		self.ratio_log = "%s, %s, %s, %s" % (ns[0], ns[1], round(ratio, 2), round(1/ratio, 2))
 
 
-		sizeList, sepShapes = self.generateLists(ns, self.control)
+		sizeList, sepShapes = self._generateLists(ns, self.control)
 		
 		if len(sizeList) > 1:
 
@@ -197,7 +196,7 @@ class ShapeMaster:
 
 					#if we've broken the cycle more than 10 times, we should regenerate the area list, 'cause this obviously ain't workin'
 					if breaks > 9:
-						sizeList, sepShapes = self.generateLists(ns)
+						sizeList, sepShapes = self._generateLists(ns)
 						breaks = 0
 						shapeBoxes = []
 						shapesizes = copy.deepcopy(sizeList)
@@ -254,7 +253,6 @@ class ShapeMaster:
 			x = int(random.uniform(r + self.density, self.bounds[0] - r - self.density))
 			y = int(random.uniform(r + self.density, self.bounds[1] - r - self.density))
 			shapeBoxes = [[x, y, r, a]]
-			print shapeBoxes
 
 		#now, if we have multiple ns we are trying to use for an overlay, let's do that...
 		if type(ns) == list and len(ns) > 1:
@@ -273,7 +271,7 @@ class ShapeMaster:
 		else:		
 			self.shapeBoxes = shapeBoxes
 
-	def drawSingle(self, name, dpi=96):
+	def drawSingle(self, name="", dpi=96):
 		#obtain all the possible colors
 		cols = []
 		for d in self.shapeBoxes:
@@ -307,11 +305,53 @@ class ShapeMaster:
 			image.save("stimuli/%s" % fname, "BMP", dpi=dpi)
 				
 			count+=1
-			self.printLog(fname)
+			self._printLog(fname)
+
+	def drawDual(self, name="shapes", dpi=96):
+		#obtain all the possible colors
+		cols = []
+		for d in self.shapeBoxes:
+		
+			cols.append(d[4])
+			
+		cols = set(cols)
+		cols = list(cols)
+
+		count = 0
+
+		image = Image.new("RGB", [self.box[0] *2, self.box[1]], self.bgcolor)
+				
+		draw = ImageDraw.Draw(image)
+
+		if self.drawOutline:
+			draw.rectangle([0, 0, self.box[0] * 2, self.box[1]], fill = self.outline)
+			draw.rectangle([4, 4, (self.box[0] * 2) - 4, self.box[1] - 4], fill = self.bgcolor)
+
+		draw.rectangle([self.box[0] - 4, 0, self.box[0] + 4, self.box[1]], fill = self.outline)
 
 
+		for c in cols:
+			for d in self.shapeBoxes:
+				if d[4] == c:
+					box1 = [d[0] - d[2] + (count * self.box[0]), d[1] - d[2], d[0] + d[2] + (count * self.box[0]), d[1] + d[2]]
+					if self.shape == 'circle':
+						draw.ellipse(box1, fill = self.colors[c])
+					elif self.shape == 'square':
+						draw.rectangle(box1, fill = self.colors[c])
+					elif self.shape == 'triangle':
+						draw.polygon([box1[0], box1[1], box1[0], box1[3], box1[2], box1[3]], fill = self.colors[c])
 
-	def drawOverlay(self, name, dpi=96):
+			count+=1
+					
+		del draw
+			
+		fname = "%s_%s_D.bmp" % (self.shape, name)
+
+		image.save("stimuli/%s" % fname, "BMP", dpi=dpi)
+				
+		self._printLog(fname)
+
+	def drawOverlay(self, name="shapes", dpi=96):
 		#make a left/right dot array stimulus from two groups of bounding boxes
 
 		if self.overlay:
@@ -330,13 +370,13 @@ class ShapeMaster:
 			fname = "%s_OL.bmp" % (name)
 
 			image.save("stimuli/%s" % fname, "BMP", dpi=dpi)
-			self.printLog(fname)		
+			self._printLog(fname)		
 
 		else:
 			raise Exception("You told me you didn't want an overlay, sucka!  You need to pass in overlay=True in the arguments or I will not be able to draw things right!")
 
 
-	def printLog(self, fname):
+	def _printLog(self, fname="shapes"):
 		if os.path.exists(self.logFile):
 			f = open(self.logFile, "a")
 		else:
@@ -347,3 +387,30 @@ class ShapeMaster:
 
 		f.write(log + "\n")
 		f.close()
+
+	def drawDualSym(self, name="shapes", n1=1, n2=2, dpi = (96,96)):
+		#now let us make the image with the number in it
+		image = Image.new("RGB", [self.box[0] * 2, self.box[1]], self.bgcolor)
+
+		draw = ImageDraw.Draw(image)
+
+		font = ImageFont.truetype("arial.ttf", 256)
+
+		if self.drawOutline:
+			draw.rectangle([0, 0, self.box[0] * 2, self.box[1]], fill = self.outline)
+			draw.rectangle([4, 4, (self.box[0] * 2) - 4, self.box[1] - 4], fill = self.bgcolor)
+
+		draw.rectangle([self.box[0] - 4, 0, self.box[0] + 4, self.box[1]], fill = self.outline)
+
+		#left text
+		text = str(n1)
+		fontsize = font.getsize(text)
+		draw.text((self.box[0]/2 - fontsize[0]/2 , self.box[1] /2 - fontsize[1]/2), text, fill = self.outline, font = font)    
+		#right text
+		text = str(n2)
+		draw.text((self.box[0]/2 - fontsize[0]/2 + self.box[0], self.box[1]/2 - fontsize[1]/2), text, fill = self.outline, font = font)
+
+		del draw
+		image.save("stimuli/%s_D_SYM.bmp" % name, "BMP", dpi=dpi)
+
+

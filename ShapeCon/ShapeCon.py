@@ -42,7 +42,7 @@ subtrials = -1
 #the text presented when a break is given
 breakText = "Time for a break.\nPRESS SPACE TO CONTINUE."
 #take a break after this many trials
-break_trial = 60
+break_trial = 120
 
 #total duration of each dot array, in seconds
 dot_duration = .750
@@ -225,7 +225,7 @@ for stim, cs in zip(stimList, csList):
 
 	if trial % break_trial == 0 and trial != trials:
 		print trial, "BREAK TIME"
-		experiments.showInstructions(screen, breakText, textcolor = [0, 0, 0])
+		experiments.showInstructions(screen, breakText, textcolor = color)
 
 	trial += 1
 	sub.printData()

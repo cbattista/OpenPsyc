@@ -14,26 +14,44 @@ class Statistician():
 		self.rejectnull = ["as predicted", "as expected"]
 		self.signs = {'>' : 'greater than', '<' : 'less than', '==' : 'equal to'}
 
-	def translate(self, term):
+	def translate(self, term, units=False):
 		#if a string return the available translation
+		output = ""
+
 		posts = self.db.getTable('factors').posts
 		if type(term) == str:
 			row = posts.find_one({'name': term})
+			print row
 			if row:
-				return row['label']
+				output = row['label']
 			else:
-				return term
+				output = term
+
+			if units:
+				output += " %s" % row['units']
+
 		#if a list/tree get all available translations
 		elif type(term) == list:
-
 			output = "%s" % self.translate(term[0])
 			for t in term[1:]:
 				output += " and %s" % self.translate(t)
-
-			return output
 		#otherwise just return a string of the term
 		else:
-			return str(term)
+			output = str(term)
+
+		return output
+
+	def describeFactor(self, factor):
+		posts = self.db.getTable('factors').posts
+
+		if type(factor) == str:
+			row = posts.find_one({'name': factor})
+		else:
+			row = posts.find_one({'name': factor[0]})
+
+		return None
+
+
 
 	def parseAssertion(self, hyp, measure, tense="future"):
 		tenses = {}
