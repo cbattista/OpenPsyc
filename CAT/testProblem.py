@@ -5,7 +5,7 @@ import random
 import problem
 
 problems = []
-
+DB = "testing"
 trial = 0
 
 while trial < 50:
@@ -18,12 +18,13 @@ while trial < 50:
 	history = {'trial':trial, 'strat':strat, 'ACC':ACC, 'RT':RT, 'misfire':misfire}
 	p = problem.Problem(ns, history)
 	problems.append(p)
-	print p, history
+	#print p, history
 
 class TestProblems(unittest.TestCase):
 	def setUp(self):
-		self.Problems = problem.Problems()
+		self.Problems = problem.Problems(DB)
 
+	
 	def testClassify(self):
 		p = problems[0]
 		self.Problems.classify(p)
