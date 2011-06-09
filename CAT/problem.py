@@ -6,7 +6,7 @@ sys.path.append(os.path.split(os.getcwd())[0])
 import mongoTools
 
 class Problems:
-	def __init__(self, DB, sid=666, exp=""):
+	def __init__(self, DB, sid=666, exp="", clear=False):
 		"""class which holds a list of Problem objects, args are:
 		problems = list of problems
 		sid = who these problems belong to
@@ -18,18 +18,8 @@ class Problems:
 		self.sid = sid
 		self.exp = exp
 
-		#counts of the different problems we are holding
-		self.counts = {'verifieds' : {}, 'temps' : {}, 'erratics' : {}, 'incorrects' : {}}
-		
-		#list of the strats that we have available
-		self.strats = []
-
-		#list of the different problems that we have		
-		self.verifieds = {}
-		self.temps = {}
-		self.erratics = {}
-		self.incorrects = {}
-		self.ns = {}
+		if clear:
+			self.posts.remove({})
 
 	def append(self, problem):
 		"""add a problem to the list of problems
@@ -71,18 +61,18 @@ class Problems:
 		strat = history[0]['strat']
 
 		if self.isIncorrect(history):
-			classification = "incorrects"
+			classification = "incorrect"
 		elif self.isErratic(history):
-			classification = "erratics"
+			classification = "erratic"
 			#in this case, the strat may be composed of multiple strategies
 			strats = ""
 			for h in history:
 				strat = "%s-%s" % (strat, h['strat'])
 			strat = strat.lstrip("-")
 		elif self.isTemporary(history):
-			classification = "temps"
+			classification = "temp"
 		elif self.isVerified(history):
-			classification = "verifieds"
+			classification = "verified"
 		else:
 			classification = "unknown"
 
@@ -95,6 +85,17 @@ class Problems:
 		c = self.posts.find(query).count()
 		return c
 
+	def query(self, query={}):
+		rows = self.posts.find(query)
+		return rows
+
+	def distinct(self, field, query = {}):
+		if query:
+			items = self.posts.find(query).distinct(field)
+		else:
+			items = self.posts.distinct(field)
+		return items
+
 	def isIncorrect(self, history):
 		"""determine whether a problem has ever
 		been answered incorrectly
@@ -103,7 +104,7 @@ class Problems:
 		for h in history:
 			ACCs.append(h['ACC'])
 
-		if set(ACCs) != set(['1']):
+		if set(ACCs) != set([1]):
 			return True
 		else:
 			return False
@@ -114,11 +115,12 @@ class Problems:
 		returns True/False
 		"""
 		strats = []
+		ACCs = []
 		for h in history:
 			strats.append(h['strat'])
 			ACCs.append(h['ACC'])
 
-		if len(set(strats)) > 1 and (set(ACCs) == set(['1'])):
+		if len(set(strats)) > 1 and (set(ACCs) == set([1])):
 			return True
 		else:
 			return False
@@ -128,7 +130,7 @@ class Problems:
 		i.e., whether it's only been answered once (and that answer was correct)
 		return True/False
 		"""
-		if len(history) == 1 and history['ACC'] == 1:
+		if len(history) == 1 and history[0]['ACC'] == 1:
 			return True
 		else:
 			return False
@@ -137,12 +139,13 @@ class Problems:
 		"""determine whether this problem has had its strategy verified
 		returns true/false and if true the verified strategy
 		"""
+		ACCs = []
 		strats = []
 		for h in history:
 			strats.append(h['strat'])
 			ACCs.append(h['ACC'])
 
-		if len(set(strats)) == 1 and (set(ACCs) == set(['1'])):
+		if len(set(strats)) == 1 and (set(ACCs) == set([1])):
 			return True
 		else:
 			return False
