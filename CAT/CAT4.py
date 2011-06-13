@@ -6,7 +6,6 @@ import VisionEgg
 from VisionEgg.Core import get_default_screen, Viewport
 from VisionEgg.FlowControl import Presentation, FunctionController, TIME_SEC_ABSOLUTE, FRAMES_ABSOLUTE
 from VisionEgg.Textures import *
-import serial
 import pickle
 import time
 import random
@@ -85,8 +84,6 @@ def mouse_handler(event):
 	elif b2:
 		misfire = 1
 	
-	p2.parameters.go_duration = (0, 'frames')
-
 def key_handler(event):
 	global correct 
 	global ACC
@@ -328,42 +325,6 @@ while mems < trials or calcs < trials:
 	ns.sort()
 	lastns = copy.deepcopy(ns)
 	lastlastns = copy.deepcopy(lastns)
-
-	if ACC:
-		if strat == "mem" and ns in memTemp:
-			memProblems.append(ns)
-			memTemp.remove(ns)
-			subject.inputData(trial, "verified", 1)
-		elif strat == "mem" and len(memProblems) < trials:
-			memTemp.append(ns)
-			problemHeap.append(ns)
-			subject.inputData(trial, "verified", 0)
-		elif strat == "mem":
-			subject.inputData(trial, "verified", 0)
-			memTemp.append(ns)
-			#don't add to heap
-			
-		elif strat == "calc" and ns in calcTemp:
-			calcProblems.append(ns)
-			calcTemp.remove(ns)
-			subject.inputData(trial, "verified", 1)
-		elif strat == "calc" and len(calcProblems) < trials:
-			calcTemp.append(ns)
-			problemHeap.append(ns)
-			subject.inputData(trial, "verified", 0)
-		elif strat == "calc":
-			subject.inputData(trial, "verified", 0)
-			calcTemp.append(ns)
-			
-		#if we have enough memory or calcs, take those suckas out of the heap
-		if len(memProblems) >= trials:
-			problemHeap = calcTemp
-		elif len(calcProblems) >= trials:
-			problemHeap = memTemp
-		
-	else:
-		incorrects.append(problem)
-		subject.inputData(trial, "verified", "NA")
 	
 	trial = trial + 1
 
@@ -371,9 +332,6 @@ while mems < trials or calcs < trials:
 
 #save sub
 subject.printData()
-
-subject.memProblems = memProblems
-subject.calcProblems = calcProblems
 
 subject.preserve()
 
