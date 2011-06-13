@@ -14,12 +14,21 @@ class Problems:
 		"""
 		
 		self.DB = mongoTools.MongoAdmin(DB)
-		self.posts = self.DB.getTable("Problems")
+		self.posts = self.DB.getTable("%s_problems" % sid)
 		self.sid = sid
 		self.exp = exp
 
 		if clear:
 			self.posts.remove({})
+
+	def __str__(self):
+		heaps = self.count({'kind':'temp'})
+		calcs = self.count({'kind':'verified', 'strat':'calc'})
+		mems = self.count({'kind':'verified', 'strat':'mems'})
+		tcalcs = self.count({'kind':'temp', 'strat':'calc'})
+		tmems = self.count({'kind':'temp', 'strat':'mem'}) 
+		output = "mem: (%s)%s, calc: (%s)%s, heap: %s\n" % (tmems, mems, tcalcs, calcs, heaps)
+		return output
 
 	def append(self, problem):
 		"""add a problem to the list of problems
@@ -83,6 +92,10 @@ class Problems:
 		row['strat'] = strat
 
 		self.posts.save(row)		
+
+	def get(self, pid):
+		problem = self.posts.find_one({'id' : pid})
+		return problem
 
 	def count(self, query={}):
 		c = self.posts.find(query).count()
@@ -157,7 +170,6 @@ class Problems:
 			return False
 
 
-
 class Problem:
 	def __init__(self, ns, response={}, keys=['trial', 'RT', 'ACC', 'strat', 'task', 'misfire']):
 		"""class which represents an arithmetic problem, args are:
@@ -218,7 +230,7 @@ class Problem:
 			self.row['carry'] = False
 
 		#let's see whether the operands are odd, even, or mixed
-		if (self.n1 % 2) and (self.n2 % 2 ):
+		if (self.n1 % 2) and (self.n2 % 2):
 			self.row['parity'] = "odd"
 		elif (self.n1 % 2 == 0) and (self.n2 % 2 == 0):
 			self.row['parity'] = "even"

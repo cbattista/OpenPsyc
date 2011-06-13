@@ -65,6 +65,13 @@ class TestProblems(unittest.TestCase):
 		self.assertTrue(c == 'incorrect')
 
 		
+	def test_get(self):
+		p1 = problem.Problem([3,4], {'trial':1, 'strat': 'mem', 'ACC':1, 'RT': 400, 'misfire':0})
+		pid = "3 + 4"
+		self.Problems.append(p1)
+		p2 = self.Problems.get(pid)
+		self.assertTrue(p2)
+
 
 if __name__ == '__main__':
     unittest.main()
