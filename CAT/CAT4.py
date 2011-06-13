@@ -71,13 +71,20 @@ pygame.font.init()
 def mouse_handler(event):
 	global strat
 
-	print event.mouse
-
-	if event.mouse == 1:
+	buttons = pygame.mouse.get_pressed()
+	b1 = buttons[0]
+	b2 = buttons[1]
+	b3 = buttons[2]
+	
+	if b1:
 		strat = "mem"
-	else:
+		p2.parameters.go_duration = (0, 'frames')
+	elif b3:
 		strat = "calc"
-
+		p2.parameters.go_duration = (0, 'frames')
+	elif b2:
+		misfire = 1
+	
 	p2.parameters.go_duration = (0, 'frames')
 
 def key_handler(event):
@@ -307,8 +314,7 @@ while mems < trials or calcs < trials:
 	
 	#BLOCK 2 - strat SELECTION
 	p2 = Presentation(go_duration=('forever', ), viewports=[stratPort])
-	p2.parameters.handle_event_callbacks=[(pygame.locals.MOUSEBUTTONDOWN, mouse_handler)]
-	p2.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, key_handler)]        
+	p2.parameters.handle_event_callbacks=[(pygame.MOUSEBUTTONDOWN, mouse_handler)]        
 	p2.go()
 	
 	#BLOCK 3 - BLANK SCREEN
