@@ -27,8 +27,6 @@ class Problems:
 		"""
 		row = self.posts.find_one({'id' : str(problem)})
 
-		inList = False
-
 		if row:
 			h = row['history']
 			for r in problem.row['history']:
@@ -46,13 +44,18 @@ class Problems:
 
 		self.classify(row['id'])
 
-	def classify(self, p_id):
-		"""for a given problem, add it to the appropriate list
-		and also update the list of counts 
-		"""
+	def haveProblem(self, problem):
+		row = self.posts.find_one({'id':str(problem)})
 
+		if row:
+			return True
+		else:
+			return False
+
+
+	def classify(self, p_id):
 		#first let's see if it's incorrect
-		classification = ""
+		kind = ""
 
 		row = self.posts.find_one({'id' : str(p_id)})
 
@@ -61,25 +64,25 @@ class Problems:
 		strat = history[0]['strat']
 
 		if self.isIncorrect(history):
-			classification = "incorrect"
+			kind = "incorrect"
 		elif self.isErratic(history):
-			classification = "erratic"
+			kind = "erratic"
 			#in this case, the strat may be composed of multiple strategies
 			strats = ""
 			for h in history:
 				strat = "%s-%s" % (strat, h['strat'])
 			strat = strat.lstrip("-")
 		elif self.isTemporary(history):
-			classification = "temp"
+			kind = "temp"
 		elif self.isVerified(history):
-			classification = "verified"
+			kind = "verified"
 		else:
-			classification = "unknown"
+			kind = "unknown"
 
-		row['classification'] = classification
+		row['kind'] = kind
 		row['strat'] = strat
 
-		self.posts.save(row)
+		self.posts.save(row)		
 
 	def count(self, query={}):
 		c = self.posts.find(query).count()
