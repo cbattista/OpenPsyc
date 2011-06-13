@@ -28,6 +28,7 @@ import shuffler
 from mongoTools import MongoAdmin
 
 ###SETTINGS
+DB = "CAT3"
 
 #always verify when there are this many problems in the heap
 checkHeap = 10
@@ -50,12 +51,12 @@ framerate = 60
 ###COLLECT SUBJECT INFO
 myArgs = sys.argv
 
-number = str(myArgs[1])
-
 try:
+	number = str(myArgs[1])
 	trials = int(myArgs[2])
 except:
 	trials = 3
+	number = 666
 
 #create subject
 subject = subject.Subject(number, 1, 1, "StratVer")
@@ -133,10 +134,13 @@ stratText, stratPort = printText(screen, strat2, 60, (255, 255, 255))
 
 print "PRESS SPACE TO START"
 
-problems = Problems()
+problems = Problems(DB)
 lastSoln = 0
 
-while len(memProblems) < trials or len(calcProblems) < trials:
+mems = 0
+calcs = 0
+
+while mems < trials or calcs < trials:
 	badProblem = True
 
 	heaps = problems.count({'kind':'temp'})
@@ -165,7 +169,7 @@ while len(memProblems) < trials or len(calcProblems) < trials:
 		ids = problems.distinct('id', {'strat': lookfor, 'kind':'temp'})
 		pid = random.choice(ids)
 		problem = problems.get(pid)
-		if problem.solution != lastSoln:
+		if soln != lastSoln:
 			badProblem = False
 	else:
 		badCycles = 0
@@ -204,8 +208,8 @@ while len(memProblems) < trials or len(calcProblems) < trials:
 				pass
 
 			problem = Problem([n1, n2])
-			ns = problem.ns
-			soln = problem.solution	
+			ns = problem.row['ns']
+			soln = problem.row['solution']
 
 			if not problems.haveProblem(problem):
 				badProblem = False
@@ -224,7 +228,7 @@ while len(memProblems) < trials or len(calcProblems) < trials:
 				badProblem = True
 
 			#don't want problem with the same solution as the last one
-			if lastSoln == problem.solution:
+			if lastSoln == soln:
 				badProblem = True
 
 			badCycles += 1
@@ -233,33 +237,33 @@ while len(memProblems) < trials or len(calcProblems) < trials:
 				print "Breaking loop"
 				badProblem = False
 
-	subject.inputData(trial, "n1", problem.n1)
-	subject.inputData(trial, "n2", problem.n2)
+	subject.inputData(trial, "n1", problem.row['n1'])
+	subject.inputData(trial, "n2", problem.row['n2'])
 
 	random.shuffle(ns)
 
-	lastSoln = problem.solution
+	lastSoln = copy.deepcopy(soln)
 
 	subject.inputData(trial, "problem", "%s" % problem)
 
 	problem_string = "%s + %s = ?" % (ns[0], ns[1])
 
 	#DISTRACTOR CONFIG
-	dist = random.choice(problem.distractors)
+	dist = random.choice(problem.row['distractors'])
 	op = random.choice(["+", "-"])
 
-	distractor = eval("%s %s %s" % (problem.solution, op, dist))
+	distractor = eval("%s %s %s" % (soln, op, dist))
 
 	side = random.choice(['l', 'r'])
 
 	if side == "l":
 		correct = "left"
-		L = str(problem.solution)
+		L = str(soln)
 		R = distractor
 	elif side == "r":
 		correct = "right"
 		L = distractor
-		R = str(problem.solution)
+		R = str(soln)
 
 	
 	#SAVE DISTRACTOR INFO
@@ -267,7 +271,7 @@ while len(memProblems) < trials or len(calcProblems) < trials:
 	subject.inputData(trial, "distractor", distractor)
 	subject.inputData(trial, "dist_side", side)
 	subject.inputData(trial, "dist_offset", dist)
-	subject.inputData(trial, "solution", problem.solution)
+	subject.inputData(trial, "solution", soln)
 	
 	#CREATE STIMULLI
 	probText, probPort = printWord(screen, problem_string, 60, (255, 255, 255))
@@ -277,13 +281,14 @@ while len(memProblems) < trials or len(calcProblems) < trials:
 	fixText, fixCross = printText(screen, '', 60, (255, 255, 255))
 
 	#EXPERIMENTER INFO
-	info = "mems: %s/%s, tmems: %s, calcs: %s/%s, tcalcs: %s, heap: %s" % mems, trials, tmems, lencalcs, trials, tcalcs, heaps)
+	#info = "mems: %s/%s, tmems: %s, calcs: %s/%s, tcalcs: %s, heap: %s" % mems, trials, tmems, lencalcs, trials, tcalcs, heaps)
 
 	print "-------------------------------------"
 	print "PROBLEM : %s" % problem
-	print "SOLUTION : %s" % problem.solution
-	print "STATUS : %s" % info
+	print "SOLUTION : %s" % soln
+	#print "STATUS : %s" % info
 	print "-------------------------------------"
+
 
 	#BLOCK 1 - PROBLEM, BLANK & POSSIBLE SOLUTIONS
 	problem = Presentation(go_duration=(problemTime, 'seconds'), viewports=[probPort])
