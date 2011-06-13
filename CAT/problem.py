@@ -88,8 +88,11 @@ class Problems:
 		c = self.posts.find(query).count()
 		return c
 
-	def query(self, query={}):
-		rows = self.posts.find(query)
+	def query(self, query={}, field={}):
+		if field:
+			rows = self.posts.find(query, field)
+		else:
+			rows = self.posts.find(query)
 		return rows
 
 	def distinct(self, field, query = {}):

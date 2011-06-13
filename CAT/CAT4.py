@@ -79,9 +79,6 @@ def mouse_handler(event):
 
 	p2.parameters.go_duration = (0, 'frames')
 
-
-
-
 def key_handler(event):
 	global correct 
 	global ACC
@@ -140,11 +137,6 @@ problems = Problems()
 lastSoln = 0
 
 while len(memProblems) < trials or len(calcProblems) < trials:
-	#generate problem based on last round
-	random.shuffle(add)
-	random.shuffle(subtract)
-	random.shuffle(memAdd)
-
 	badProblem = True
 
 	heaps = problems.count({'kind':'temp'})
@@ -178,6 +170,11 @@ while len(memProblems) < trials or len(calcProblems) < trials:
 	else:
 		badCycles = 0
 		while badProblem:
+			#generate problem based on last round
+			random.shuffle(add)
+			random.shuffle(subtract)
+			random.shuffle(memAdd)
+
 			#if the strat was "calculation", reduce the size of the number
 			if strat == "calc" and mems < trials:
 				n1 = abs(n1 - subtract[0])
