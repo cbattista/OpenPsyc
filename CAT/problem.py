@@ -24,7 +24,7 @@ class Problems:
 	def __str__(self):
 		heaps = self.count({'kind':'temp'})
 		calcs = self.count({'kind':'verified', 'strat':'calc'})
-		mems = self.count({'kind':'verified', 'strat':'mems'})
+		mems = self.count({'kind':'verified', 'strat':'mem'})
 		tcalcs = self.count({'kind':'temp', 'strat':'calc'})
 		tmems = self.count({'kind':'temp', 'strat':'mem'}) 
 		output = "mem: (%s)%s, calc: (%s)%s, heap: %s\n" % (tmems, mems, tcalcs, calcs, heaps)

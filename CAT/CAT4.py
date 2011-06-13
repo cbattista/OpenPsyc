@@ -167,19 +167,26 @@ while mems < trials or calcs < trials:
 		verify = random.choice([1, 0, 0, 0])
 
 	if heaps and verify:
-		#determine type of problem we are looking for
+		#determine type of problem we are looking for and its availability
 		if tcalcs <= tmems:
-			lookfor = "calc"
-		else:
-			lookfor = "mem"
-		ids = problems.distinct('id', {'strat': lookfor, 'kind':'temp'})
-		if ids:
-			pid = random.choice(ids)
-			problem = problems.get(pid)
-			soln = problem.row['solution']
-			if soln != lastSoln:
-				badProblem = False
-	else:
+			look = "calc"
+		elif tmems > tcalcs:
+			look = "mem"
+		else: 
+			look = False
+
+		#if we can get such a problem
+		if look:
+			ids = problems.distinct('id', {'strat': look, 'kind':'temp'})
+			if ids:
+				pid = random.choice(ids)
+				problem = problems.get(pid)
+				soln = problem.row['solution']
+				#if the problem solution wasn't the same last as last time's
+				if soln != lastSoln:
+					badProblem = False
+
+	if not badProblem:
 		badCycles = 0
 		while badProblem:
 			#generate problem based on last round
