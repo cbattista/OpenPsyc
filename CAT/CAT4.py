@@ -69,6 +69,7 @@ pygame.font.init()
 #strat control, mouse clicks
 def mouse_handler(event):
 	global strat
+	global misfire
 
 	buttons = pygame.mouse.get_pressed()
 	b1 = buttons[0]
@@ -138,7 +139,7 @@ stratText, stratPort = printText(screen, strat2, 60, (255, 255, 255))
 
 print "PRESS SPACE TO START"
 
-problems = Problems(DB)
+problems = Problems(DB, clear=False)
 lastSoln = 0
 
 mems = 0
@@ -146,10 +147,11 @@ calcs = 0
 
 while mems < trials or calcs < trials:
 	badProblem = True
+	misfire = 0
 
 	heaps = problems.count({'kind':'temp'})
 	calcs = problems.count({'kind':'verified', 'strat':'calc'})
-	mems = problems.count({'kind':'verified', 'strat':'mems'})
+	mems = problems.count({'kind':'verified', 'strat':'mem'})
 	tcalcs = problems.count({'kind':'temp', 'strat':'calc'})
 	tmems = problems.count({'kind':'temp', 'strat':'mem'})
 
@@ -169,12 +171,14 @@ while mems < trials or calcs < trials:
 		if tcalcs <= tmems:
 			lookfor = "calc"
 		else:
-			lookfor = "mem"		
+			lookfor = "mem"
 		ids = problems.distinct('id', {'strat': lookfor, 'kind':'temp'})
-		pid = random.choice(ids)
-		problem = problems.get(pid)
-		if soln != lastSoln:
-			badProblem = False
+		if ids:
+			pid = random.choice(ids)
+			problem = problems.get(pid)
+			soln = problem.row['solution']
+			if soln != lastSoln:
+				badProblem = False
 	else:
 		badCycles = 0
 		while badProblem:
@@ -241,8 +245,8 @@ while mems < trials or calcs < trials:
 				print "Breaking loop"
 				badProblem = False
 
-	subject.inputData(trial, "n1", problem.row['n1'])
-	subject.inputData(trial, "n2", problem.row['n2'])
+	subject.inputData(trial, "n1", n1)
+	subject.inputData(trial, "n2", n2)
 
 	random.shuffle(ns)
 
@@ -284,19 +288,16 @@ while mems < trials or calcs < trials:
 
 	fixText, fixCross = printText(screen, '', 60, (255, 255, 255))
 
-	#EXPERIMENTER INFO
-	#info = "mems: %s/%s, tmems: %s, calcs: %s/%s, tcalcs: %s, heap: %s" % mems, trials, tmems, lencalcs, trials, tcalcs, heaps)
 
 	print "-------------------------------------"
 	print "PROBLEM : %s" % problem
 	print "SOLUTION : %s" % soln
-	#print "STATUS : %s" % info
+	print "STATUS : %s" % problems
 	print "-------------------------------------"
 
-
 	#BLOCK 1 - PROBLEM, BLANK & POSSIBLE SOLUTIONS
-	problem = Presentation(go_duration=(problemTime, 'seconds'), viewports=[probPort])
-	problem.go()
+	p4 = Presentation(go_duration=(problemTime, 'seconds'), viewports=[probPort])
+	p4.go()
 
 	p3 = Presentation(go_duration=(blankTime, 'seconds'), viewports=[fixCross])
 	p3.go()
@@ -317,10 +318,13 @@ while mems < trials or calcs < trials:
 	#BLOCK 3 - BLANK SCREEN
 	p3 = Presentation(go_duration=(0.5, 'seconds'), viewports=[fixCross])
 	p3.go()
-	
 
-	subject.inputData(trial, "ACC", ACC)
 	subject.inputData(trial, "strat", strat)
+	
+	response = {'trial': trial, 'RT' : RT, 'ACC' : ACC, 'misfire' : misfire, 'strat' : strat}
+
+	problem.addResponse(response)
+	problems.append(problem)
 
 	ns.sort()
 	lastns = copy.deepcopy(ns)
