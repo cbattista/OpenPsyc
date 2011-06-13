@@ -95,7 +95,9 @@ class Problems:
 
 	def get(self, pid):
 		problem = self.posts.find_one({'id' : pid})
-		return problem
+		p = Problem([0, 0])
+		p.row = problem
+		return p
 
 	def count(self, query={}):
 		c = self.posts.find(query).count()

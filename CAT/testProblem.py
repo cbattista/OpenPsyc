@@ -70,7 +70,7 @@ class TestProblems(unittest.TestCase):
 		pid = "3 + 4"
 		self.Problems.append(p1)
 		p2 = self.Problems.get(pid)
-		self.assertTrue(p2)
+		self.assertTrue(str(p2) == pid)
 
 
 if __name__ == '__main__':
