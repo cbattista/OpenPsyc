@@ -18,8 +18,7 @@ import copy
 
 from problem import *
 
-#suckas need to changes this on they home computaz
-sys.path.append('/home/cogdev/code/OpenPsyc')
+sys.path.append(os.path.split(os.getcwd())[0])
 
 from experiments import printWord, printText
 import subject
@@ -31,7 +30,7 @@ DB = "CAT3"
 
 #always verify when there are this many problems in the heap
 checkHeap = 10
-#always verify when one bin is full and there is this many problems in the heap
+#always verify when one bin is full and there are this many problems in the heap
 fullHeap = 5
 
 problemTime = 1
@@ -44,21 +43,22 @@ subtract = [1,2,3]
 memAdd = [-1, -2, 1, 2]
 begin = [2,3,4,5]
 
-framerate = 60
-
-
 ###COLLECT SUBJECT INFO
 myArgs = sys.argv
 
 try:
-	number = str(myArgs[1])
 	trials = int(myArgs[2])
 except:
 	trials = 3
-	number = 666
 
-#create subject
-subject = subject.Subject(number, 1, 1, "StratVer")
+try:
+	number = str(myArgs[1])
+	#create subject
+	subject = subject.Subject(number, 1, 1, "StratVer")
+except:
+	subject = adder.Adder("CAT2", "verification_pre", 20)
+
+
 
 ###SET SCREEN
 screen = get_default_screen()
