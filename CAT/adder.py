@@ -1,5 +1,7 @@
 #! /usr/env/python
 
+import os
+import sys
 import random
 sys.path.append(os.path.split(os.getcwd())[0])
 
@@ -41,7 +43,8 @@ class Adder:
 
 	def analyze(self):
 		#get the ranges of mem
-		soln = max(self.posts.find({'strat':'mem'}, {'solution':1}))
+		rows =self.posts.find({'cur_strat':'mem'}, {'solution':1})
+		print soln
 		self.limit = soln / 2	
 	
 		mems = self.posts.find({'strat':'mem'}, {'RT':1})

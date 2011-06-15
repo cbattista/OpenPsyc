@@ -15,6 +15,7 @@ from pygame.locals import *
 import sys
 import os
 import copy
+import adder
 
 from problem import *
 
@@ -49,14 +50,15 @@ myArgs = sys.argv
 try:
 	trials = int(myArgs[2])
 except:
-	trials = 3
+	trials = 20
 
 try:
-	number = str(myArgs[1])
+	sid = str(myArgs[1])
 	#create subject
-	subject = subject.Subject(number, 1, 1, "StratVer")
+	subject = subject.Subject(sid, 1, 1, "StratVer")
 except:
 	subject = adder.Adder("CAT2", "verification_pre", 20)
+	sid = 666
 
 
 
@@ -139,22 +141,27 @@ stratText, stratPort = printText(screen, strat2, 60, (255, 255, 255))
 
 print "PRESS SPACE TO START"
 
-problems = Problems(DB, clear=False)
+problems = Problems(DB, sid, clear=False)
 lastSoln = 0
 
 mems = 0
 calcs = 0
 
 while mems < trials or calcs < trials:
-	badProblem = True
+	#reset state vars
 	misfire = 0
+	verify = 0
+	problem = None
+	soln = None
 
+	#update current counts
 	heaps = problems.count({'kind':'temp'})
 	calcs = problems.count({'kind':'verified', 'strat':'calc'})
 	mems = problems.count({'kind':'verified', 'strat':'mem'})
 	tcalcs = problems.count({'kind':'temp', 'strat':'calc'})
 	tmems = problems.count({'kind':'temp', 'strat':'mem'})
 
+	###PROBLEM SELECTION LOGIC
 	#if the heap is at the threshold, definitely check it
 	if heaps >= checkHeap:
 		verify = 1
@@ -164,29 +171,31 @@ while mems < trials or calcs < trials:
 	#if we have all our calc problems and there are a few in the heap
 	#otherwise give it 1/4 odds of checking
 	else:
-		verify = random.choice([1, 0, 0, 0])
+		if heaps:
+			verify = random.choice([1, 0, 0, 0])
 
-	if heaps and verify:
-		#determine type of problem we are looking for and its availability
-		if tcalcs <= tmems:
-			look = "calc"
-		elif tmems > tcalcs:
-			look = "mem"
-		else: 
-			look = False
+	#verify what?
+	if verify:
+		if tcalcs > tmems and calcs < trials:
+			verify = "calc"
+		elif tmems > tcalcs and tmems < trials:
+			verify = "mem"
+		else:
+			verify = random.choice(["calc", "mem"])
 
-		#if we can get such a problem
-		if look:
-			ids = problems.distinct('id', {'strat': look, 'kind':'temp'})
-			if ids:
-				pid = random.choice(ids)
-				problem = problems.get(pid)
-				soln = problem.row['solution']
-				#if the problem solution wasn't the same last as last time's
-				if soln != lastSoln:
-					badProblem = False
+	#go through and attempt to verify the desired problem
+	if verify:
+		ids = problems.distinct('id', {'strat': verify, 'kind':'temp'})
+		if ids:
+			pid = random.choice(ids)
+			tempproblem = problems.get(pid)
+			tempsoln = tempproblem.row['solution']
+			#if the problem solution wasn't the same last as last time's
+			if tempsoln != lastSoln:
+				problem = tempproblem
 
-	if not badProblem:
+	if not problem:
+		badProblem = True
 		badCycles = 0
 		while badProblem:
 			#generate problem based on last round
@@ -211,7 +220,7 @@ while mems < trials or calcs < trials:
 				n1 = n1 + add[0]
 				n2 = n2 + add[1]
 			#unlesss 
-			elif strat == "mem" and calcs >= trials:
+			else:
 				n1 = abs(n1 + memAdd[0])
 				n2 = abs(n2 + memAdd[1])
 				if n1 == 0:
@@ -219,47 +228,55 @@ while mems < trials or calcs < trials:
 				if n2 == 0:
 					n2 = 1
 
-			else:
-				pass
+			tempproblem = Problem([n1, n2])
+			tempns = tempproblem.row['ns']
+			tempsoln = tempproblem.row['solution']
 
-			problem = Problem([n1, n2])
-			ns = problem.row['ns']
-			soln = problem.row['solution']
-
-			if not problems.haveProblem(problem):
+			if not problems.haveProblem(tempproblem):
 				badProblem = False
 
-			if soln > 100:
+			if tempsoln > 100:
 				n1 = n1 / 2
 				n2 = n2 / 2
 				badProblem = True
 
 			#don't want problems with a 10 in them, or a 1
-			if (10 in ns) or (1 in ns):
+			if (10 in tempns) or (1 in tempns):
 				badProblem = True
 
-			#don't want problems where both operands are the same
-			if len(set(ns)) == 1:
-				badProblem = True
+			#don't want problems where both operands are the same and also 2 digits
+			if len(set(tempns)) == 1:
+				if tempns[0] > 9:
+					badProblem = True
 
 			#don't want problem with the same solution as the last one
-			if lastSoln == soln:
+			if lastSoln == tempsoln:
 				badProblem = True
 
 			badCycles += 1
+			print "searching..."
 			#if we are stuck in an infinite loop
 			if badCycles >= 100000:
 				print "Breaking loop"
 				badProblem = False
 
+		problem = Problem(tempns)
+
+	ns = problem.row['ns']
+	n1 = ns[0]
+	n2 = ns[1]
+	soln = problem.row['solution']
+
+	#record some problem info
 	subject.inputData(trial, "n1", n1)
 	subject.inputData(trial, "n2", n2)
+	subject.inputData(trial, "problem", "%s" % problem)
+	subject.inputData(trial, "solution", soln)
 
 	random.shuffle(ns)
 
 	lastSoln = copy.deepcopy(soln)
 
-	subject.inputData(trial, "problem", "%s" % problem)
 
 	problem_string = "%s + %s = ?" % (ns[0], ns[1])
 
@@ -286,7 +303,6 @@ while mems < trials or calcs < trials:
 	subject.inputData(trial, "distractor", distractor)
 	subject.inputData(trial, "dist_side", side)
 	subject.inputData(trial, "dist_offset", dist)
-	subject.inputData(trial, "solution", soln)
 	
 	#CREATE STIMULLI
 	probText, probPort = printWord(screen, problem_string, 60, (255, 255, 255))
