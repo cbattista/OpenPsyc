@@ -17,7 +17,7 @@ class Problems:
 		if not exp:
 			self.posts = self.DB.getTable("%s_problems" % sid)
 		else:
-			self.posts = self.DB.getTable("%s_%s_problems" % (exp, sid))
+			self.posts = self.DB.getTable("%s_%s_problems" % (sid, exp))
 		self.sid = sid
 		self.exp = exp
 
