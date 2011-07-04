@@ -14,7 +14,10 @@ class Problems:
 		"""
 		
 		self.DB = mongoTools.MongoAdmin(DB)
-		self.posts = self.DB.getTable("%s_problems" % sid)
+		if not exp:
+			self.posts = self.DB.getTable("%s_problems" % sid)
+		else:
+			self.posts = self.DB.getTable("%s_%s_problems" % (exp, sid))
 		self.sid = sid
 		self.exp = exp
 

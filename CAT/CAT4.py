@@ -136,7 +136,7 @@ pause.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, pause_handler)]
 pause.go()
 
 #generate texts
-strat2 = "\n\nPlease describe your strat"
+strat2 = "\n\nPlease describe your strategy"
 stratText, stratPort = printText(screen, strat2, 60, (255, 255, 255))
 
 print "PRESS SPACE TO START"

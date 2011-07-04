@@ -29,20 +29,8 @@ from mongoTools import MongoAdmin
 ###SETTINGS
 DB = "CAT3"
 
-#always verify when there are this many problems in the heap
-checkHeap = 10
-#always verify when one bin is full and there are this many problems in the heap
-fullHeap = 5
-
 problemTime = 1
 blankTime = 2
-
-#problem adjustment values
-add = [4,5,6,7]
-subtract = [1,2,3]
-
-memAdd = [-1, -2, 1, 2]
-begin = [2,3,4,5]
 
 ###COLLECT SUBJECT INFO
 myArgs = sys.argv
@@ -54,8 +42,6 @@ try:
 except:
 	subject = adder.Adder("CAT2", "verification_post", 20)
 	sid = 666
-
-
 
 ###SET SCREEN
 screen = get_default_screen()
@@ -92,13 +78,13 @@ def key_handler(event):
 
 	RT = p.time_sec_since_go
 	
-	if key == K_LALT:
+	if key == 308:
 		if correct == "left":
 			ACC = 1
 		else:
 			ACC = 0
 		p.parameters.go_duration=(0, 'frames')
-	elif key == K_RALT:
+	elif key == 313:
 		if correct == "right":
 			ACC = 1
 		else:
@@ -114,11 +100,6 @@ def pause_handler(event):
 #initial variables
 trial = 1
 
-#starting operands
-random.shuffle(begin)
-n1 = begin[0]
-n2 = begin[1]
-
 #default strat
 strat = None
 
@@ -131,25 +112,29 @@ pause.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, pause_handler)]
 pause.go()
 
 #generate texts
-strat2 = "\n\nPlease describe your strat"
+strat2 = "\n\nPlease describe your strategy"
 stratText, stratPort = printText(screen, strat2, 60, (255, 255, 255))
 
 print "PRESS SPACE TO START"
 
 pre_problems = Problems(DB, sid, clear=False)
+post_problems = Problems(DB, sid, exp="post", clear=False)
 
 query = {'kind' : 'verified'}
 
-post_problems = pre_problems.query(query)
+ver_pre = pre_problems.query(query)
 
 ns_list = []
 
-for row in post_problems:
+for row in ver_pre:
 	ns_list.append(row['ns'])
 
 ns_list = ns_list * 2
 
 random.shuffle(ns_list)
+
+print len(ns_list)
+print ns_list
 
 lastSoln = 0
 
@@ -203,7 +188,6 @@ for ns in ns_list:
 
 	
 	#SAVE DISTRACTOR INFO
-	subject.inputData(trial, "orig_strat", orig_strat)
 	subject.inputData(trial, "distractor", distractor)
 	subject.inputData(trial, "dist_side", side)
 	subject.inputData(trial, "dist_offset", dist)
@@ -219,7 +203,6 @@ for ns in ns_list:
 	print "-------------------------------------"
 	print "PROBLEM : %s" % problem
 	print "SOLUTION : %s" % soln
-	print "STATUS : %s" % problems
 	print "-------------------------------------"
 
 	#BLOCK 1 - PROBLEM, BLANK & POSSIBLE SOLUTIONS
@@ -251,7 +234,7 @@ for ns in ns_list:
 	response = {'trial': trial, 'RT' : RT, 'ACC' : ACC, 'misfire' : misfire, 'strat' : strat}
 
 	problem.addResponse(response)
-	problems.append(problem)
+	post_problems.append(problem)
 
 	ns.sort()
 	lastns = copy.deepcopy(ns)
