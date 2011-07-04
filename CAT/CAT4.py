@@ -97,13 +97,13 @@ def key_handler(event):
 
 	RT = p.time_sec_since_go
 	
-	if key == 308:
+	if key == K_LALT:
 		if correct == "left":
 			ACC = 1
 		else:
 			ACC = 0
 		p.parameters.go_duration=(0, 'frames')
-	elif key == 313:
+	elif key == K_RALT:
 		if correct == "right":
 			ACC = 1
 		else:
