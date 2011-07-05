@@ -127,11 +127,19 @@ ver_pre = pre_problems.query(query)
 ns_list = []
 
 for row in ver_pre:
-	ns_list.append(row['ns'])
+	ns_list.append(row['ns'], row['strat'])
 
-ns_list = ns_list * 2
+ns_list1 = copy.deepcopy(ns_list)
+ns_list2 = copy.deepcopy(ns_list)
 
-random.shuffle(ns_list)
+badshuffle = True
+
+while badshuffle:
+	random.shuffle(ns_list1)
+	random.shuffle(ns_list2)
+	if ns_list1[-1] != ns_list2[0]:
+		ns_list = ns_list1 + ns_list2
+		badshuffle = False
 
 print len(ns_list)
 print ns_list
@@ -147,9 +155,9 @@ for ns in ns_list:
 	verify = 0
 	problem = None
 	soln = None
+	orig_strat = ns[1]
 
-
-	problem = Problem(ns)
+	problem = Problem(ns[0])
 
 	ns = problem.row['ns']
 	n1 = ns[0]
@@ -229,6 +237,7 @@ for ns in ns_list:
 	p3 = Presentation(go_duration=(0.5, 'seconds'), viewports=[fixCross])
 	p3.go()
 
+	subject.inputData(trial, "orig_strat", orig_strat)
 	subject.inputData(trial, "strat", strat)
 	
 	response = {'trial': trial, 'RT' : RT, 'ACC' : ACC, 'misfire' : misfire, 'strat' : strat}
