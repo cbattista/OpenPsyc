@@ -113,6 +113,12 @@ class Problems:
 			rows = self.posts.find(query)
 		return rows
 
+	def update(self, query={}, update={}):
+		if query:
+			self.posts.update(query, update, multi=True)
+		else:
+			self.posts.update({}, document=update, multi=True)
+
 	def distinct(self, field, query = {}):
 		if query:
 			items = self.posts.find(query).distinct(field)

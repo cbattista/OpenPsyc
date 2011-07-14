@@ -17,7 +17,7 @@ p = problem.Problems(DB, sid=sid)
 
 strats = ['calc', 'mem']
 
-kinds = ['verified', 'temp', 'erratics', 'incorrect']
+kinds = ['verified', 'temp', 'erratic', 'incorrect']
 
 posts = mongoTools.MongoAdmin(DB).getTable("subject_stats")
 #posts.remove({})
@@ -44,7 +44,7 @@ for k in kinds:
 		for r in rows:
 			for h in r['history']:
 				
-				if h['RT'] <= 2.5:
+				if h['RT'] <= 4.5:
 					d[k][s]['RTs'].append(h['RT'])
 					d[k][s]['solutions'].append(r['solution'])
 
@@ -101,15 +101,19 @@ for k in newkinds:
 		#histogram
 		plotnum += 1
 		pylab.subplot("%i2%i" % (numplots, plotnum), title = k)
-		pylab.hist(mems['RTs'], 50, label=mlabel, alpha=0.5)
-		pylab.hist(calcs['RTs'], 50, label=clabel, alpha=0.5)
+		if mems['RTs']:
+			pylab.hist(mems['RTs'], 50, label=mlabel, alpha=0.5)
+		if calcs['RTs']:		
+			pylab.hist(calcs['RTs'], 50, label=clabel, alpha=0.5)
 		pylab.legend(prop=prop)
 
 		#scatterplot
 		plotnum += 1
 		pylab.subplot("%i2%i" % (numplots, plotnum), title = k)
-		pylab.scatter(mems['RTs'], mems['solutions'], color='b', label =mlabel)
-		pylab.scatter(calcs['RTs'], calcs['solutions'], color='g', label = clabel)
+		if mems['RTs']:
+			pylab.scatter(mems['RTs'], mems['solutions'], color='b', label =mlabel)
+		if calcs['RTs']:
+			pylab.scatter(calcs['RTs'], calcs['solutions'], color='g', label = clabel)
 		pylab.legend(prop=prop)		
 
 
