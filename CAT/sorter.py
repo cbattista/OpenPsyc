@@ -83,7 +83,7 @@ numplots = len(newkinds)
 
 plotnum = 0
 
-pylab.figure(figsize=[8,8l])
+pylab.figure(figsize=[8,8])
 pylab.title("PPT %s" % sid)
 
 #now lets make 'em
