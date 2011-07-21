@@ -119,6 +119,9 @@ class Problems:
 		else:
 			self.posts.update({}, document=update, multi=True)
 
+	def save(self, row):
+		self.posts.save(row)
+
 	def distinct(self, field, query = {}):
 		if query:
 			items = self.posts.find(query).distinct(field)

@@ -11,15 +11,8 @@ DB="CAT3"
 pre = problem.Problems(DB, sid)
 post = problem.Problems(DB, sid, exp="post")
 
-print pre.count({'trained': 'novel'})
-
 pre.update(update={'$set' : {'trained' :'novel'}})
 post.update(update={'$set': {'trained' :'novel'}})
-
-
-
-print post.count({})
-print post.count({'trained':'novel'})
 
 f = open("P_%s.csv" % sid)
 
@@ -31,6 +24,4 @@ for line in f.readlines():
 	pre.update({'n1': n1, 'n2': n2}, {'$set' : {'trained' : 'trained'}})
 	post.update({'n1': n1, 'n2': n2}, {'$set' : {'trained' : 'trained'}})
 	
-
-print pre.count({'trained':'novel'})
-
+	

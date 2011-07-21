@@ -33,7 +33,13 @@ for pid in post.distinct('id'):
 	if PRE.count():
 		POST = post.query({'kind':'erratic', 'id':pid})
 		if POST.count():
-			conversion = "%s|%s" % (PRE[0]['strat'], POST[0]['strat'])
+			print POST[0]['strat']
+			print POST[0]['history']
+			conv = ""
+			for h in POST[0]['history'][:2]:
+				conv = "%s%s-" % (conv, h['strat'])
+			conv = conv.rstrip('-')
+			conversion = "%s|%s" % (PRE[0]['strat'], conv)
 			
 			pre.update({'id':pid}, {'$set': {'conversion': conversion}})
 			post.update({'id':pid}, {'$set': {'conversion': conversion}}) 
