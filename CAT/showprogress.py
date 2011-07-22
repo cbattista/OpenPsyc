@@ -12,8 +12,8 @@ sid = sys.argv[1]
 
 DB="CAT3"
 
-pre = problem.Problems(DB, sid)
-post = problem.Problems(DB, sid, exp="post")
+pre = problem.Problems(DB, sid, exp="pre_clean")
+post = problem.Problems(DB, sid, exp="post_clean")
 
 mdict = {}
 mdict['calc'] = 'o'

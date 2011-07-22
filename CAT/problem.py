@@ -40,9 +40,11 @@ class Problems:
 		row = self.posts.find_one({'id' : str(problem)})
 
 		if row:
+			print "appending to existing problem: %s" % row['id']
 			h = row['history']
 			for r in problem.row['history']:
 				h.append(r)
+			print h
 			row['history'] = h
 			self.posts.save(row)
 		else:
@@ -63,6 +65,10 @@ class Problems:
 			return True
 		else:
 			return False
+
+	def classifyAll(self):
+		for pid in self.posts.distinct('id'):
+			self.classify(pid)
 
 
 	def classify(self, p_id):
