@@ -70,7 +70,8 @@ for k in kinds:
 		row[k]['tests'].append({'name': 'Barlett', 'statistic' : T, 'p': bsig})
 		row[k]['tests'].append({'name': 'Levene', 'statistic' : W, 'p' : lsig})
 
-posts.insert(row)
+print row
+#posts.insert(row)
 
 #how many plots?
 newkinds = []
@@ -88,7 +89,7 @@ pylab.title("PPT %s" % sid)
 
 #now lets make 'em
 
-prop = {'size': 10}
+#prop = {'size': 10}
 
 for k in newkinds:
 	mems = d[k]['mem']
