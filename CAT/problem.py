@@ -112,9 +112,16 @@ class Problems:
 		c = self.posts.find(query).count()
 		return c
 
-	def query(self, query={}, field={}):
+	def query(self, query={}, field=[]):
 		if field:
-			rows = self.posts.find(query, field)
+			results = self.posts.find(query, fields = field)
+			if len(field) == 1:
+				rows = []
+				for r in results:
+					rows.append(r[field[0]])
+			else:
+				rows = results		
+
 		else:
 			rows = self.posts.find(query)
 		return rows
@@ -270,4 +277,5 @@ class Problem:
 			distractors.append(10)
 
 		self.row['distractors'] = distractors
+	
 
