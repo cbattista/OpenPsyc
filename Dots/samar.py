@@ -47,18 +47,6 @@ subtrials = controls['subtrials']
 
 volumeThresh = -30
 
-#instruction text
-f = open(os.path.join(basePath, "instructions.txt"))
-text = f.read()
-f.close()
-instructionText = unicode(text, "utf-8")
-
-#the text presented when a break is given
-f = open(os.path.join(basePath, "breakmessage.txt"))
-text = f.read()
-f.close()
-breakText = unicode(text, "utf-8")
-
 #take a break after this many trials
 break_trial = controls['break trial']
 
@@ -253,7 +241,7 @@ x = screen.size[0] / 4
 y = screen.size[1] / 2
 
 print "Beginning block now..."
-experiments.showInstructions(screen, instructionText, textcolor=(0, 0, 0))
+experiments.showImage(screen, os.path.join(basePath, "instructions.BMP"), 0)
 
 if subtrials == 0:
 	stimList = stimList
@@ -325,7 +313,7 @@ while trialList:
 
 	if trial % break_trial == 0 and trial != trials:
 		print trial, "BREAK TIME"
-		experiments.showInstructions(screen, breakText, textcolor = [0, 0, 0])
+		experiments.showImage(screen, os.path.join(basePath, "break.BMP"), 0)
 
 	trial += 1
 	sub.printData()
