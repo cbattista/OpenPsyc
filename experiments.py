@@ -112,10 +112,13 @@ def showInstructions(screen,  text, textSize=60, textcolor=(255, 255, 255)):
 		if event.key == pygame.locals.K_SPACE:
 			quit()
 
+	def click(event):
+		quit()
+
 	def quit(dummy_arg=None):
 		instructions.parameters.go_duration = (0,'frames')
 
-	instructions.parameters.handle_event_callbacks=[(pygame.locals.QUIT, quit),(pygame.locals.KEYDOWN, quitKey)]
+	instructions.parameters.handle_event_callbacks=[(pygame.locals.QUIT, quit),(pygame.locals.KEYDOWN, quitKey), (pygame.locals.MOUSEBUTTONDOWN, click)]
 
 	#show instructions
 	instructions.go()

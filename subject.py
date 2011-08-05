@@ -16,7 +16,6 @@ class Subject:
 
 	def inputData(self, trial, condition, value):
 		trial = str(trial)
-		print "ADDING %s, %s, %s" % (trial, condition, value)
 		if self.results.has_key(trial):
 			data = self.results[trial]
 			data[condition] = value
