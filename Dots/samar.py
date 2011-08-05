@@ -14,7 +14,11 @@ from VisionEgg.FlowControl import TIME_INDEPENDENT
 from VisionEgg.FlowControl import Presentation, FunctionController, TIME_SEC_ABSOLUTE, FRAMES_ABSOLUTE
 
 
-sys.path.append(os.path.split(os.getcwd())[0])
+basePath = '/home/samar/OpenPsyc'
+
+sys.path.append(basePath)
+
+basePath = os.path.join(basePath, 'Dots')
 
 import experiments
 import subject
@@ -26,7 +30,10 @@ f = open("controls.pck")
 controls = pickle.load(f)
 f.close()
 
-sub = subject.Subject(controls['subject id'], experiment = "dots")
+#response format
+response = controls['response']
+
+sub = subject.Subject(controls['subject id'], experiment = "dots", session=response)
 
 
 ###BEGIN SETTINGS
@@ -34,22 +41,20 @@ sub = subject.Subject(controls['subject id'], experiment = "dots")
 #total trials
 trials = controls['trials']
 
-#response format
-response = "touch"
 
 #of the total trials, how many do you want to run (good for testing), put -1 for all
-subtrials = 30
+subtrials = controls['subtrials']
 
-volumeThresh = -15
+volumeThresh = -30
 
 #instruction text
-f = open("instructions.txt")
+f = open(os.path.join(basePath, "instructions.txt"))
 text = f.read()
 f.close()
 instructionText = unicode(text, "utf-8")
 
 #the text presented when a break is given
-f = open("breakmessage.txt")
+f = open(os.path.join(basePath, "breakmessage.txt"))
 text = f.read()
 f.close()
 breakText = unicode(text, "utf-8")
@@ -62,24 +67,23 @@ dot_duration = controls['dot duration'] / 1000.
 
 #total duration of each mask
 mask_dur = controls['mask duration'] / 1000.
-mask_img = Image.open("mask.BMP")
+mask_img = Image.open(os.path.join(basePath, "mask.BMP"))
 
 #size of fixation cross
 crossSize = 80
+crossChar = '+'
 #duration of fixation cross
 cross_duration = controls['ISI'] / 1000.
  
 ###END SETTINGS
 
-stimLib = "stimuli"
+stimLib = os.path.join(basePath, "stimuli")
 	
 screen = get_default_screen()
 
 screen.parameters.bgcolor = (.52, .51, .52)
 
 pygame.init()
-
-fixText, fixCross = experiments.printWord(screen, '+', crossSize, (0, 0, 0))
 
 trial = 1
 
@@ -112,11 +116,13 @@ def put_image_dual(t_abs):
 	global start
 	global bus
 	global talked
+	global fixCross
 
 	if not phase:
 		start = t_abs
 		phase = "dots"
 		talked = False
+		fixText, fixCross = experiments.printWord(screen, '+', crossSize, (0, 0, 0))
 
 	t = t_abs - start
 
@@ -137,11 +143,13 @@ def put_image_dual(t_abs):
 		if message:
 			if message.src is level:
 				if message.structure.has_key('peak'):
-					peak = message.structure['peak'][0]	
-					if peak > volumeThresh and not talked:
+					peak = message.structure['peak'][0]
+					print peak
+					if peak > volumeThresh  and peak < 0 and not talked:
 						sub.inputData(trial, "RT", t)
 						print t
 						talked = True
+						fixText, fixCross = experiments.printWord(screen, '&', crossSize, (0, 0, 0))
 
 def mouseGrade(event):
 	global side
@@ -168,6 +176,15 @@ def mouseGrade(event):
 
 	elif b2:
 		misfire = 1
+
+def quitHandler(event):
+	global trialList
+	if event.key == pygame.locals.K_q:
+		print "might quit"
+		if 64 == pygame.key.get_mods():
+			trialList = zip([], [])
+			print "definitely quitting"
+		
 
 
 def mouseFunc(event):
@@ -211,7 +228,7 @@ def mouseFunc(event):
 #fixation pause
 #add response handlers
 
-fixText, fixCross = experiments.printWord(screen, '+', crossSize, (0, 0, 0))
+
 
 ratios = shuffler.Condition([.9, .75, .66, .5, .33, .25], "ratio", 6)
 seeds = shuffler.Condition([6, 7, 8, 9, 10], "seed", 6)
@@ -238,15 +255,18 @@ y = screen.size[1] / 2
 print "Beginning block now..."
 experiments.showInstructions(screen, instructionText, textcolor=(0, 0, 0))
 
-if subtrials == -1:
+if subtrials == 0:
 	stimList = stimList
 	csList = csList
 else:
 	stimList = stimList[0:subtrials]
 	csList = csList[0:subtrials]
 
+trialList = zip(stimList, csList)
 
-for stim, cs in zip(stimList, csList):
+while trialList:
+	stim, cs = trialList.pop(0)
+	crossChar = '+'
 	pressed = False
 	misfire = 0
 	
@@ -293,9 +313,9 @@ for stim, cs in zip(stimList, csList):
 	p.add_controller(None, None, FunctionController(during_go_func=put_image_dual, temporal_variables = TIME_SEC_ABSOLUTE))
 
 	if response == "voice":
-		p.parameters.handle_event_callbacks=[(pygame.locals.MOUSEBUTTONDOWN, mouseGrade)]
+		p.parameters.handle_event_callbacks=[(pygame.locals.MOUSEBUTTONDOWN, mouseGrade), (pygame.locals.KEYDOWN, quitHandler)]
 	else:
-		p.parameters.handle_event_callbacks=[(pygame.locals.MOUSEBUTTONDOWN, mouseFunc)]
+		p.parameters.handle_event_callbacks=[(pygame.locals.MOUSEBUTTONDOWN, mouseFunc), (pygame.locals.KEYDOWN, quitHandler)]
 
 	p.go()
 	
@@ -309,5 +329,4 @@ for stim, cs in zip(stimList, csList):
 
 	trial += 1
 	sub.printData()
-
 
