@@ -67,4 +67,6 @@ for s in stimList:
 
 	sub.printData()
 
+sound.play()
+
 sub.printData()
