@@ -363,3 +363,46 @@ class ListShuffler():
 
 	def printList(self):
 		print self.finalList
+
+class GoNoGo:
+	def __init__(self, gosignal=1, nogosignal=0, minBlock=6, maxBlock=8, blockRepeat=3):
+		self.blockRange = range(minBlock, maxBlock+1)
+		self.blockSize = random.choice(self.blockRange)
+		self.makeSignals()
+		self.repeats = 0
+		self.blockRepeat= blockRepeat
+		self.gosignal = gosignal
+		self.nogosignal = nogosignal	
+
+	def getSignal(self):
+		if self.signals:
+			signal = self.signals.pop()
+		else:
+			self.nextBlock()
+			self.makeSignals()
+			signal = self.signals.pop()
+
+		if signal == 'go':
+			output = self.gosignal
+		else:
+			output = self.nogosignal
+
+		return output
+
+	def nextBlock(self):
+		newBlock = random.choice(self.blockRange)
+		if self.blockSize == newBlock:
+			self.repeats += 1
+		else:
+			self.repeats = 0
+
+		if self.repeats >= self.blockRepeat:
+			self.repeats =- 1
+			self.next()	
+		else:
+			self.blockSize = newBlock
+
+	def makeSignals(self):
+		self.signals = ['nogo'] * self.blockSize
+		self.signals += ['go']
+		
