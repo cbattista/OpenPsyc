@@ -4,13 +4,14 @@ import sys
 sys.path.append(os.path.split(os.getcwd())[0])
 
 import mongoTools
+import problem
 
 class TrainingBuilder:
 	def __init__(self, problems, setSize=20):
 		self.problems = problems
 		self.setSize = setSize
 
-		self.f = open("P_%s.csv" % self.problems.sid)
+		self.f = open("P_%s.csv" % self.problems.sid, 'w')
 		self.build('mem')
 		self.build('calc')
 		self.f.close()
@@ -18,7 +19,7 @@ class TrainingBuilder:
 	def build(self, strat):
 		rows = self.problems.query({'strat': strat, 'kind': 'verified'})
 
-		rows = rows.sort({'solution' : 1})
+		rows = rows.sort('solution')
 
 		trainingProbs = []
 
@@ -40,4 +41,7 @@ class TrainingBuilder:
 			line = "%s, %s, %s, %s, %s\n" % (problems.sid, p['n1'], p['n2'], p['strat'], p['solution']) 
 			self.f.write(line)
 
+problems = problem.Problems("CAT3", sys.argv[1])
+
+b = TrainingBuilder(problems)
 
