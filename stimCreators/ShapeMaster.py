@@ -6,19 +6,24 @@ import copy
 from euclid import euclid
 		   
 class ShapeMaster:
-	def __init__(self, box=[640, 640], area = [0.3, 0.3], shape= 'circle', sizemeasure='area', sizectrl = 'SC', density=5, separation=25, colors =[[255, 255, 255]], overlay = False, bgcolor = [0,0,0], outline = [255, 255, 255], control='', logFile = "dot_log.csv", drawOutline=False):
+	def __init__(self, box=[640, 640], shapesize = [0.3, 0.3], shape= 'circle', sizemeasure='area', sizectrl = 'SC', density=5, separation=25, colors =[[255, 255, 255]], overlay = False, bgcolor = [0,0,0], outline = [255, 255, 255], control='', logFile = "dot_log.csv", drawOutline=False):
+
+		#make an output directory
+		if not os.path.exists("stimuli"):
+			os.mkdir("stimuli")
+
 		self.box = box
 		self.logFile = logFile
 		self.ctl_iters = 1
 		self.shape = shape
 		#if one item size provided
 		#otherwise don't size control
-		self.shapesize = []
-		for d in self.shapesize:
+		self.shapeSize = []
+		for s in shapesize:
 			if sizemeasure == 'area':
-				self.shapesize.append(box[0] * box[1] * d)
+				self.shapeSize.append(box[0] * box[1] * s)
 			elif sizemeasure == 'perimeter':
-				self.shapesize.append((box[0] + box[1]) * d)
+				self.shapeSize.append((box[0] + box[1]) * s)
 		
 		self.overlay = overlay
 		self.sizemeasure = sizemeasure
@@ -126,14 +131,12 @@ class ShapeMaster:
 		sepShapes = []
 		if type(ns) == int:
 			while not sizeList:
-				sizeList = self._shapeSolver(n, self.shapesize, control=control)
+				sizeList = self._shapeSolver(n, self.shapeSize, control=control)
 				
 		elif type(ns) == list:
 			areaSums = []
 			periSums = []
-
-
-			for n, size in zip(ns, self.shapesize):
+			for n, size in zip(ns, self.shapeSize):
 				sizes = []
 				while not sizes:
 					sizes, controlSize = self._shapeSolver(n, size, control=control)
@@ -180,6 +183,8 @@ class ShapeMaster:
 
 		sizeList, sepShapes = self._generateLists(ns, self.control)
 		
+		print sizeList
+
 		if len(sizeList) > 1:
 
 			while not goodList:
@@ -313,15 +318,23 @@ class ShapeMaster:
 		for d in self.shapeBoxes:
 		
 			cols.append(d[4])
+
+		print cols
 			
 		cols = set(cols)
 		cols = list(cols)
+
+		cols = [0, 1]
+		self.shapeBoxes = [self.shapeBoxes[0], self.shapeBoxes[2]]
 
 		count = 0
 
 		image = Image.new("RGB", [self.box[0] *2, self.box[1]], self.bgcolor)
 				
 		draw = ImageDraw.Draw(image)
+
+		print self.shapeBoxes, cols
+
 
 		if self.drawOutline:
 			draw.rectangle([0, 0, self.box[0] * 2, self.box[1]], fill = self.outline)
