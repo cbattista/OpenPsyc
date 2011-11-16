@@ -107,15 +107,10 @@ strat = None
 
 #strat selection
 fixText, fixCross = printWord(screen, '', 60, (255, 255, 255))
-pause = Presentation(go_duration=('forever', ), viewports=[fixCross])
-pause.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, pause_handler)]  
-pause.go()
 
 #generate texts
 strat2 = "\n\nPlease describe your strategy"
 stratText, stratPort = printText(screen, strat2, 60, (255, 255, 255))
-
-print "PRESS SPACE TO START"
 
 pre_problems = Problems(DB, sid, clear=False)
 post_problems = Problems(DB, sid, exp="post", clear=False)
@@ -127,7 +122,7 @@ ver_pre = pre_problems.query(query)
 ns_list = []
 
 for row in ver_pre:
-	ns_list.append(row['ns'], row['strat'])
+	ns_list.append([row['ns'], row['strat']])
 
 ns_list1 = copy.deepcopy(ns_list)
 ns_list2 = copy.deepcopy(ns_list)
@@ -148,6 +143,12 @@ lastSoln = 0
 
 mems = 0
 calcs = 0
+
+print "PRESS SPACE TO START"
+
+pause = Presentation(go_duration=('forever', ), viewports=[fixCross])
+pause.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, pause_handler)]  
+pause.go()
 
 for ns in ns_list:
 	#reset state vars
