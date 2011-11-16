@@ -21,6 +21,7 @@ import adder
 
 from newproblem import *
 import shuffler
+from handlers import *
 
 ns = range(1, 11)
 
@@ -35,6 +36,15 @@ for n1 in ns:
 
 print len(combos)
 
+###UNCHANGING STIMULI
+
+#strat selection
+fixText, fixCross = printWord(screen, '', 60, (255, 255, 255))
+
+#generate texts
+strat2 = "\n\nPlease describe your strategy"
+stratText, stratPort = printText(screen, strat2, 60, (255, 255, 255))
+
 db = "jump_kids"
 sid = "Tyler"
 
@@ -43,7 +53,6 @@ problems = Problems(db, sid, "addition")
 #1st lets assess the kid, show them each problem twice
 
 s = shuffler.ListAdder(combos, size= 2)
-
 stimList = s.shuffle()
 
 for s in stimList:
