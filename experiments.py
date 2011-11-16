@@ -112,15 +112,29 @@ def showInstructions(screen,  text, textSize=60, textcolor=(255, 255, 255)):
 		if event.key == pygame.locals.K_SPACE:
 			quit()
 
+	def click(event):
+		quit()
+
 	def quit(dummy_arg=None):
 		instructions.parameters.go_duration = (0,'frames')
 
-	instructions.parameters.handle_event_callbacks=[(pygame.locals.QUIT, quit),(pygame.locals.KEYDOWN, quitKey)]
+	instructions.parameters.handle_event_callbacks=[(pygame.locals.QUIT, quit),(pygame.locals.KEYDOWN, quitKey), (pygame.locals.MOUSEBUTTONDOWN, click)]
 
 	#show instructions
 	instructions.go()
 
 def showImage(screen, img, duration=1):
+
+	def quitKey(event):
+		if event.key == pygame.locals.K_SPACE:
+			quit()
+
+	def click(event):
+		quit()
+
+	def quit(dummy_arg=None):
+		image.parameters.go_duration = (0,'frames')
+
 	img = Image.open(img)
 
 	#create textures
@@ -134,7 +148,12 @@ def showImage(screen, img, duration=1):
 	#create viewports
 	viewport = Viewport(screen=screen, stimuli=[stimulus])
 
-	image = Presentation(go_duration=(duration, 'seconds'), viewports=[viewport])
+	if duration:
+		image = Presentation(go_duration=(duration, 'seconds'), viewports=[viewport])
+	else:
+		image = Presentation(go_duration=('forever', ''), viewports=[viewport])
+		image.parameters.handle_event_callbacks=[(pygame.locals.QUIT, quit),(pygame.locals.KEYDOWN, quitKey), (pygame.locals.MOUSEBUTTONDOWN, click)]
+
 	image.go()
 
 

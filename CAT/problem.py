@@ -40,9 +40,11 @@ class Problems:
 		row = self.posts.find_one({'id' : str(problem)})
 
 		if row:
+			print "appending to existing problem: %s" % row['id']
 			h = row['history']
 			for r in problem.row['history']:
 				h.append(r)
+			print h
 			row['history'] = h
 			self.posts.save(row)
 		else:
@@ -63,6 +65,10 @@ class Problems:
 			return True
 		else:
 			return False
+
+	def classifyAll(self):
+		for pid in self.posts.distinct('id'):
+			self.classify(pid)
 
 
 	def classify(self, p_id):
@@ -106,12 +112,28 @@ class Problems:
 		c = self.posts.find(query).count()
 		return c
 
-	def query(self, query={}, field={}):
+	def query(self, query={}, field=[]):
 		if field:
-			rows = self.posts.find(query, field)
+			results = self.posts.find(query, fields = field)
+			if len(field) == 1:
+				rows = []
+				for r in results:
+					rows.append(r[field[0]])
+			else:
+				rows = results		
+
 		else:
 			rows = self.posts.find(query)
 		return rows
+
+	def update(self, query={}, update={}):
+		if query:
+			self.posts.update(query, update, multi=True)
+		else:
+			self.posts.update({}, document=update, multi=True)
+
+	def save(self, row):
+		self.posts.save(row)
 
 	def distinct(self, field, query = {}):
 		if query:
@@ -255,4 +277,5 @@ class Problem:
 			distractors.append(10)
 
 		self.row['distractors'] = distractors
+	
 

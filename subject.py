@@ -5,18 +5,21 @@ import time
 import pickle
 
 class Subject:
-	def __init__(self, number=666, session="", run="", experiment="unknown"):		
+	def __init__(self, number=666, session="", run="", experiment="unknown", dataDir=""):		
 		self.number = number
 		self.session = session
 		self.run = run
 		self.date = time.strftime("%d_%b_%y_%I_%M%p")
 		#create dictionary to hold trial results
 		self.fname = "%s_%s_%s_%s_%s.csv" % (experiment, number, session, run, self.date)
+
+		if dataDir:
+			self.fname = os.path.join(dataDir, self.fname)
+
 		self.results = {}
 
 	def inputData(self, trial, condition, value):
 		trial = str(trial)
-		print "ADDING %s, %s, %s" % (trial, condition, value)
 		if self.results.has_key(trial):
 			data = self.results[trial]
 			data[condition] = value
