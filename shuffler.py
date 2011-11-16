@@ -363,3 +363,37 @@ class ListShuffler():
 
 	def printList(self):
 		print self.finalList
+
+class ListAdder:
+	def __init__(self, items=[1,2,3,4], size=2):
+		self.lists = []
+		self.items = items
+		self.size = size
+
+	def shuffle(self):
+		badshuffle = True
+
+		while badshuffle:
+			lists = []
+			for i in range(self.size):
+				new_items = copy.deepcopy(self.items)
+				random.shuffle(new_items)
+				lists.append(new_items)
+
+			checkFail = False
+			for l in lists:
+				index = lists.index(l)
+				if index != len(lists)-1:
+					if lists[index][-1] == lists[index+1][0]:
+						checkFail = True
+
+			if not checkFail:
+				badshuffle = False
+
+		newList = []
+		for l in lists:
+			newList += l
+
+		self.finalList = newList
+		return newList
+
