@@ -97,9 +97,9 @@ class Problems:
 
 	def suggestProblem(self, kind='mem'):
 		if kind == 'mem':
-			ops, sols = problems.stratReport('mem')
+			ops, sols = self.stratReport('mem')
 		elif kind == 'calc':
-			ops, sols = problems.stratReport('calc')
+			ops, sols = self.stratReport('calc')
 		else:
 			raise Exception("I need either mem or calc you gave %s" % kind)
 
@@ -125,6 +125,8 @@ class Problems:
 			else:
 				novel = True
 
+			print p, novel, size
+
 			if size and novel:
 				badProblem = False
 
@@ -136,10 +138,10 @@ class Problems:
 		else:
 			verify = kind
 
-		ids = problems.distinct('id', {'strat': verify, 'kind':'temp'})
+		ids = self.distinct('id', {'strat': verify, 'kind':'temp'})
 		if ids:
 			pid = random.choice(ids)
-			problem = problems.get(pid)
+			problem = self.get(pid)
 			return problem
 		else:
 			return None

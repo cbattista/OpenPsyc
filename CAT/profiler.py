@@ -104,7 +104,7 @@ except:
 ###VARIABLES
 
 #settings variables
-problemTime = 1.25 #how long the program stays on the screen
+problemTime = 1.75 #how long the program stays on the screen
 blankTime = 1 #pause between strategy report and next problem
 diffTime = 2.5 #how long the strategy response appears for
 stepSize = [1,2,3,4] #size of step to take in problem space
@@ -146,7 +146,7 @@ pause.go()
 while not done:
 	trial += 1
 	strat = 'calc'
-
+	print phase, trial
 	#select operands based on phase
 	if trial != 1:
 		if phase == 1:
@@ -159,48 +159,47 @@ while not done:
 			else:
 				n1 -= random.choice(stepSize)
 				n2 -= random.choice(stepSize)
-				if n1 <= 4 and n2 <= 4:
-					phase = 2
-
-		elif phase == 2:
-			#update current counts
-			mo, ms = problems.stratReport('mem')
-			co, cs = problems.stratReport('calc')
+				if n1 <= 4 or n2 <= 4:
+					phase += 1
 			
-		elif phase == 3:
-			counts = problems.getCounts()
-			while phase == 3:
-				needMem = memCount - counts['tmem'] + 5
-				needCalc = memCount - count['tcalc'] + 5
-				if needMem > 0 and needCalc > 0:
-					#pick which strat to search for				
-					s = random.choice(['mem', 'calc'])
-					p = problems.suggestProblem(s)
-				elif needMem > 0:
-					#search for mems
-					p = problems.suggestProblem('mem')
-				elif needCalc > 0:
-					#search for calcs
-					p = problems.suggestProblem('calc')
-				else:
-					phase = 4
+			problem = Problem([n1, n2])
 
-		elif phase == 4:
+		if phase == 2:
+			counts = problems.getCounts()
+			needMem = memCount - counts['tmem'] + 5
+			needCalc = memCount - counts['tcalc'] + 5
+			if needMem > 0 or needCalc > 0:
+				#pick which strat to search for				
+				s = random.choice(['mem', 'calc'])
+				problem = problems.suggestProblem(s)
+			elif needMem > 0:
+				#search for mems
+				problem = problems.suggestProblem('mem')
+			elif needCalc > 0:
+				#search for calcs
+				problem = problems.suggestProblem('calc')
+			else:
+				phase += 1
+
+		if phase == 3:
 			temp = problems.getTemp()
 			if temp:
-				p = temp
+				problem = temp
+				print problem
 			else:
-				phase = 5
+				phase += 1
 		#probably should do some last check here and redirect if necessary
-		elif phase == 5:
+		
+		if phase == 4:
 			print "Experiment Complete :)"
 			done = True
-		else:
-			raise Exception("Phase %s WTF man, that ain't right (should be 1-4)" % phase)
+
+	else:
+		problem = Problem([n1, n2])
+
 
 
 	#get problem info and data
-	problem = Problem([n1, n2], operation = operation)
 	ns = problem.row['ns']
 	n1 = ns[0]
 	n2 = ns[1]
