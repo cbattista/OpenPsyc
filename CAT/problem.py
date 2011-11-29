@@ -4,6 +4,7 @@ import sys
 sys.path.append(os.path.split(os.getcwd())[0])
 
 import mongoTools
+import random
 
 class Problems:
 	def __init__(self, DB, sid=666, exp="", clear=False):
@@ -33,6 +34,19 @@ class Problems:
 		output = "mem: (%s)%s, calc: (%s)%s, heap: %s\n" % (tmems, mems, tcalcs, calcs, heaps)
 		return output
 
+	def getCounts(self, q = {}):
+		output = {}
+		if not q:
+			output['heap'] = self.count({'kind':'temp'})
+			output['calc'] = self.count({'kind':'verified', 'strat':'calc'})
+			output['mem'] = self.count({'kind':'verified', 'strat':'mem'})
+			output['tcalc'] = self.count({'kind':'temp', 'strat':'calc'})
+			output['tmem'] = self.count({'kind':'temp', 'strat':'mem'}) 
+		else:
+			output = self.count(q)
+
+		return output		
+
 	def append(self, problem):
 		"""add a problem to the list of problems
 		if the problem is already in the list, add to its history
@@ -57,6 +71,78 @@ class Problems:
 			self.posts.save(row)		
 
 		self.classify(row['id'])
+
+	def stratReport(self, s='mem'):
+		q = {'strat': s, 'kind' : {'$ne': 'erratic'}}
+
+		#RTs = self.distinct('RT', q)
+		ns = self.distinct('n1', q)
+		ns += self.distinct('n2', q)
+		#ACCs = self.distinct('ACC', q)
+		solutions = self.distinct('solution', q)
+
+		#operand range
+		opRange = [min(ns), max(ns)]	
+
+		#solution range
+		solRange = [min(solutions), max(solutions)]
+		"""
+		#RT
+		RT = sum(RTs) / len(RTs)
+
+		#ACC
+		ACC = sum(ACCs) / len(ACCs)
+		"""
+		return opRange, solRange
+
+	def suggestProblem(self, kind='mem'):
+		if kind == 'mem':
+			ops, sols = problems.stratReport('mem')
+		elif kind == 'calc:
+			ops, sols = problems.stratReport('calc')
+		else:
+			raise Exception("I need either mem or calc you gave %s" % kind)
+
+		badProblem = True
+		
+		while badProblem:
+			print "Generating a %s" % kind
+			n1 = random.choice(range(ops[0], ops[-1]+ 1)
+			n2 = random.choice(range(ops[0], ops[-1]+ 1)
+			solution = n1 + n2
+
+			#is the size appropriate?
+			if solution >= sols[0] and solution <= sols[1]:
+				size = True
+			else:
+				size = False
+
+			p = Problem([n1, n2])
+
+			#have we seen this problem before
+			if self.haveProblem(p):
+				novel = False
+			else:
+				novel = True
+
+			if size and novel:
+				badProblem = False
+
+		return Problem([n1, n2])
+
+	def getTemp(self, kind =""):
+		if not kind:
+			verify = random.choice(["calc", "mem"])
+		else:
+			verify = kind
+
+		ids = problems.distinct('id', {'strat': verify, 'kind':'temp'})
+		if ids:
+			pid = random.choice(ids)
+			problem = problems.get(pid)
+			return problem
+		else:
+			return None
 
 	def haveProblem(self, problem):
 		row = self.posts.find_one({'id':str(problem)})
@@ -112,7 +198,7 @@ class Problems:
 		c = self.posts.find(query).count()
 		return c
 
-	def query(self, query={}, field=[]):
+	def find(self, query={}, field=[]):
 		if field:
 			results = self.posts.find(query, fields = field)
 			if len(field) == 1:
@@ -125,6 +211,10 @@ class Problems:
 		else:
 			rows = self.posts.find(query)
 		return rows
+
+	#accomodating some legacy code
+	def query(self, query={}, field=[]):
+		self.find(query, field)
 
 	def update(self, query={}, update={}):
 		if query:
@@ -198,7 +288,7 @@ class Problems:
 
 
 class Problem:
-	def __init__(self, ns, response={}, keys=['trial', 'RT', 'ACC', 'strat', 'task', 'misfire']):
+	def __init__(self, ns, response={}, keys=['trial', 'RT', 'ACC', 'strat', 'task', 'misfire'], operation = '+'):
 		"""class which represents an arithmetic problem, args are:
 		ns = digits involved
 		history = a list of responses dicts to the problem
@@ -206,6 +296,15 @@ class Problem:
 
 		currently only works with +, but support for -, *, / should be added
 		"""
+		if operation not in ['+', 'x', '*']:
+			print "I can't do %s yet (sorry), going to do + instead" % operation
+			self.operation = '+'
+		else:
+			if operation == 'x':
+				self.operation = '*'
+			else:
+				self.operation = operation
+
 		self.row = {}
 		ns.sort()
 		self.row['ns'] = ns
@@ -216,7 +315,7 @@ class Problem:
 		if response:
 			self.addResponse(response)
 
-		self.row['operation'] = "+"#eventually we'll adjust amend this class to work with other operands
+		self.row['operation'] = self.operation
 		self.analyze()
 		self.suggestDistractors()
 
@@ -247,14 +346,16 @@ class Problem:
 
 		self.row['solution'] = eval("%s %s %s" % (self.n1, self.row['operation'], self.n2))
 
-		#let's see whether it requires a carry operation (addition specific)
-		n1 = int(str(self.n1)[-1])
-		n2 = int(str(self.n2)[-1])
 
-		if (n1 + n2) >= 10:
-			self.row['carry'] = True
-		else:
-			self.row['carry'] = False
+		if self.operation == '+':
+			#let's see whether it requires a carry operation (addition specific)
+			n1 = int(str(self.n1)[-1])
+			n2 = int(str(self.n2)[-1])
+
+			if (n1 + n2) >= 10:
+				self.row['carry'] = True
+			else:
+				self.row['carry'] = False
 
 		#let's see whether the operands are odd, even, or mixed
 		if (self.n1 % 2) and (self.n2 % 2):
@@ -268,14 +369,24 @@ class Problem:
 		distractors = []
 		
 		if self.row['parity'] == "mixed":
-			distractors.append(1)
-			distractors.append(2)
+			distractors += ['+1', '+2', '-1', '-2']			
 		else:
-			distractors.append(2)	
+			distractors += ['+2', '-2']	
 
 		if self.row['solution'] >= 30:
-			distractors.append(10)
+			distractors += ['+10', '-10']
+
+		if self.operation == "*":
+			distractors += ['+%s' % self.n1, '-%s' % self.n1, '+%s' % self.n2, '-%s' % self.n2]
 
 		self.row['distractors'] = distractors
 	
 
+	def getDistractor(self):
+		#DISTRACTOR CONFIG
+
+		dist = random.choice(self.row['distractors'])
+			
+		distractor = eval("%s %s" % (self.row['solution'], dist))
+
+		return distractor
