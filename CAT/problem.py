@@ -98,7 +98,7 @@ class Problems:
 	def suggestProblem(self, kind='mem'):
 		if kind == 'mem':
 			ops, sols = problems.stratReport('mem')
-		elif kind == 'calc:
+		elif kind == 'calc':
 			ops, sols = problems.stratReport('calc')
 		else:
 			raise Exception("I need either mem or calc you gave %s" % kind)
@@ -107,8 +107,8 @@ class Problems:
 		
 		while badProblem:
 			print "Generating a %s" % kind
-			n1 = random.choice(range(ops[0], ops[-1]+ 1)
-			n2 = random.choice(range(ops[0], ops[-1]+ 1)
+			n1 = random.choice(range(ops[0], ops[-1]+ 1))
+			n2 = random.choice(range(ops[0], ops[-1]+ 1))
 			solution = n1 + n2
 
 			#is the size appropriate?
