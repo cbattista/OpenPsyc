@@ -16,6 +16,10 @@ problems = Problems(db, sid, "addition")
 pylab.figure()
 pylab.grid()
 
+counts = problems.getCounts()
+
+print counts
+
 n1s = problems.distinct('n1')
 n2s = problems.distinct('n2')
 
@@ -33,7 +37,7 @@ for problem in problems.find():
 			c = 'r'
 		else:
 			c = 'g'
-
+		
 		if h['ACC'] == 0:
 			m = 'x'
 		else:
@@ -49,18 +53,36 @@ for problem in problems.find():
 
 ma = max(RTs)
 
-sizes = []
+norms = []
 for rt in RTs:
 	n = rt / ma
-	sizes.append(n * 200)
+	norms.append(n)
 
-pylab.scatter(xs, ys, c=colors, marker=markers[1], s=sizes, alpha=0.5)
+for x, y, n, c, m in zip(xs, ys, norms, colors, markers):
+	pylab.scatter([x], [y], n * 800, c, marker=m, alpha=0.5)
+	pylab.scatter([y], [x], n * 800, c, marker=m, alpha=0.5)
 
-pylab.xticks(n1s)
-pylab.yticks(n2s)
+#c=colors, marker=markers[1], s=sizes, alpha=0.5)
 
-pylab.xlim([min(n1s) - 1, max(n1s) + 1])
-pylab.ylim([min(n2s) - 1, max(n2s) + 1])
+ns = n1s + n2s
+
+pylab.xticks(ns)
+pylab.yticks(ns)
+
+mi = min(ns)
+ma = max(ns)
+
+#draw mirror axis
+pylab.plot([mi, ma], [mi, ma], color='k', alpha=0.5)
+
+#draw marker lines
+for i in [10, 20, 30, 40, 50]:
+	pylab.plot([i, i], [mi, ma], color='k', alpha=0.5)
+	pylab.plot([mi, ma], [i, i], color='k', alpha=0.5)
+
+
+pylab.xlim([min(ns) - 1, max(ns) + 1])
+pylab.ylim([min(ns) - 1, max(ns) + 1])
 
 pylab.xlabel('small number')
 pylab.ylabel('big number')
