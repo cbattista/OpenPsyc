@@ -104,10 +104,9 @@ except:
 ###VARIABLES
 
 #settings variables
-problemTime = 1.75 #how long the program stays on the screen
-blankTime = 1 #pause between strategy report and next problem
+problemTime = 2 #how long the program stays on the screen
+blankTime = 0.25 #pause between strategy report and next problem
 diffTime = 2.5 #how long the strategy response appears for
-stepSize = [1,2,3,4] #size of step to take in problem space
 
 #state variables
 done = False
@@ -150,6 +149,12 @@ while not done:
 	#select operands based on phase
 	if trial != 1:
 		if phase == 1:
+			#we want to more closely explore problems space for operands under 20
+			if n1 < 20 and n2 < 20:
+				stepSize = [1,2]
+			else:
+				stepSize = [1,2,3,4]
+
 			if direction == "up":
 				n1 += random.choice(stepSize)
 				n2 += random.choice(stepSize)
@@ -159,15 +164,23 @@ while not done:
 			else:
 				n1 -= random.choice(stepSize)
 				n2 -= random.choice(stepSize)
+
+				n1 = abs(n1)
+				n2 = abs(n2)
+
 				if n1 <= 4 or n2 <= 4:
 					phase += 1
 			
 			problem = Problem([n1, n2])
+			print direction, n1, n2
 
 		if phase == 2:
 			counts = problems.getCounts()
 			needMem = memCount - counts['tmem'] + 5
 			needCalc = memCount - counts['tcalc'] + 5
+
+			print counts
+
 			if needMem > 0 or needCalc > 0:
 				#pick which strat to search for				
 				s = random.choice(['mem', 'calc'])
