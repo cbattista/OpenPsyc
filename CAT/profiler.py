@@ -21,6 +21,7 @@ import adder
 sys.path.append(os.path.split(os.getcwd())[0])
 
 from problem import *
+from walker import *
 import shuffler
 from handlers import *
 import subject
@@ -64,7 +65,7 @@ def key_handler(event):
 		else:
 			ACC = 0
 		p.parameters.go_duration=(0, 'frames')
-	elif key == 307:
+	elif key == 307 or key == 313:
 		if correct == "right":
 			ACC = 1
 		else:
@@ -104,8 +105,8 @@ except:
 ###VARIABLES
 
 #settings variables
-problemTime = 2 #how long the program stays on the screen
-blankTime = 0.25 #pause between strategy report and next problem
+problemTime = 1 #how long the program stays on the screen
+blankTime = 0.1 #blank between problem and solutions
 diffTime = 2.5 #how long the strategy response appears for
 
 #state variables
@@ -142,75 +143,90 @@ pause = Presentation(go_duration=('forever', ), viewports=[startCross])
 pause.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, pause_handler)]  
 pause.go()
 
+#some walkers that we'll use to sample areas of interest of problem space
+first_walker = Walker()
+
+walkers = []
+for i in [2,3,5,7,10]:
+	walkers.append(LineWalker(i, stepSize=[3,4]))
+
+walkers = Walkers(walkers)
+
+phase = 4
+
 while not done:
 	trial += 1
 	strat = 'calc'
 	print phase, trial
 	#select operands based on phase
+	
+
 	if trial != 1:
-		if phase == 1:
-			#we want to more closely explore problems space for operands under 20
-			if n1 < 20 and n2 < 20:
-				stepSize = [1,2]
+		problem = None
+		#now every so often obtain other problems of interest
+		if random.choice([1,2,3,4,5]) == 1:
+			wp = walkers.next()
+			if wp:
+				if not problems.haveProblem(wp):
+					problem = wp
 			else:
-				stepSize = [1,2,3,4]
+				pass
 
-			if direction == "up":
-				n1 += random.choice(stepSize)
-				n2 += random.choice(stepSize)
-				#if we've reached our maximum operand size
-				if n1 >= maxOp and n2 >= maxOp:
-					direction = "down"
-			else:
-				n1 -= random.choice(stepSize)
-				n2 -= random.choice(stepSize)
+		if not problem:
+			if phase == 1:
+				#we want to more closely explore problems space for operands under 20
+				if n1 < 20 and n2 < 20:
+					first_walker.stepSize = [1,2]
+				else:
+					first_walker.stepSize = [1,2,3,4]
 
-				n1 = abs(n1)
-				n2 = abs(n2)
+				problem = first_walker.next()
 
-				if n1 <= 4 or n2 <= 4:
+				if not problem:
+					phase += 1			
+
+			if phase == 2:
+				counts = problems.getCounts()
+				needMem = memCount - counts['tmem'] + 5
+				needCalc = memCount - counts['tcalc'] + 5
+
+				print counts
+
+				if needMem > 0 or needCalc > 0:
+					#pick which strat to search for				
+					s = random.choice(['mem', 'calc'])
+					problem = problems.suggestProblem(s)
+				elif needMem > 0:
+					#search for mems
+					problem = problems.suggestProblem('mem')
+				elif needCalc > 0:
+					#search for calcs
+					problem = problems.suggestProblem('calc')
+				else:
 					phase += 1
-			
-			problem = Problem([n1, n2])
-			print direction, n1, n2
 
-		if phase == 2:
-			counts = problems.getCounts()
-			needMem = memCount - counts['tmem'] + 5
-			needCalc = memCount - counts['tcalc'] + 5
-
-			print counts
-
-			if needMem > 0 or needCalc > 0:
-				#pick which strat to search for				
-				s = random.choice(['mem', 'calc'])
-				problem = problems.suggestProblem(s)
-			elif needMem > 0:
-				#search for mems
-				problem = problems.suggestProblem('mem')
-			elif needCalc > 0:
-				#search for calcs
-				problem = problems.suggestProblem('calc')
-			else:
-				phase += 1
-
-		if phase == 3:
-			temp = problems.getTemp()
-			if temp:
-				problem = temp
-				print problem
-			else:
-				phase += 1
-		#probably should do some last check here and redirect if necessary
+			if phase == 3:
+				temp = problems.getTemp()
+				if temp:
+					problem = temp
+					print problem
+				else:
+					phase += 1
+			#probably should do some last check here and redirect if necessary
 		
-		if phase == 4:
-			print "Experiment Complete :)"
-			done = True
+			if phase == 4:
+				counts = problems.getCounts()
+				vm = counts['mem']
+				vc = counts['calc']
+				if vm < memCount or vc < calcCount:
+					phase = 2
+					problem = Problem([n1, n2])
+				else:
+					print "Experiment Complete :)"
+					done = True
 
 	else:
 		problem = Problem([n1, n2])
-
-
 
 	#get problem info and data
 	ns = problem.row['ns']
@@ -247,7 +263,7 @@ while not done:
 
 	#vision egg display stuff
 	probText, probPort = printWord(screen, problem_string, 60, (255, 255, 255))
-	vp, vr = printText(screen, "%s                                                 %s" % (L, R), 60, (255, 255, 255))
+	vp, vr = printText(screen, "\n\n\n\n\n\n\n%s                                                 %s" % (L, R), 60, (255, 255, 255))
 	fixText, fixCross = printText(screen, '', 60, (255, 255, 255))
 
 	#experimenter info on the terminal
@@ -260,10 +276,10 @@ while not done:
 	p4 = Presentation(go_duration=(problemTime, 'seconds'), viewports=[probPort])
 	p4.go()
 
-	p3 = Presentation(go_duration=(blankTime, 'seconds'), viewports=[fixCross])
-	p3.go()
+	#p3 = Presentation(go_duration=(blankTime, 'seconds'), viewports=[fixCross])
+	#p3.go()
 
-	p = Presentation(go_duration=('forever', ), viewports=[vr])
+	p = Presentation(go_duration=('forever', ), viewports=[probPort, vr])
 	p.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, key_handler)]  
 	p.go()
 
