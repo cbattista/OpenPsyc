@@ -152,12 +152,11 @@ for i in [2,3,5,7,10]:
 
 walkers = Walkers(walkers)
 
-phase = 4
+phase = 2
 
 while not done:
 	trial += 1
 	strat = 'calc'
-	print phase, trial
 	#select operands based on phase
 	
 
@@ -209,7 +208,6 @@ while not done:
 				temp = problems.getTemp()
 				if temp:
 					problem = temp
-					print problem
 				else:
 					phase += 1
 			#probably should do some last check here and redirect if necessary
@@ -220,7 +218,6 @@ while not done:
 				vc = counts['calc']
 				if vm < memCount or vc < calcCount:
 					phase = 2
-					problem = Problem([n1, n2])
 				else:
 					print "Experiment Complete :)"
 					done = True
@@ -228,85 +225,88 @@ while not done:
 	else:
 		problem = Problem([n1, n2])
 
-	#get problem info and data
-	ns = problem.row['ns']
-	n1 = ns[0]
-	n2 = ns[1]
-	soln = problem.row['solution']	
-	lastSoln = copy.deepcopy(soln)
+	if problem:
+		print phase, trial, problem
 
-	#record problem operands, solution, and id
-	subject.inputData(trial, "n1", n1)
-	subject.inputData(trial, "n2", n2)
-	subject.inputData(trial, "problem", "%s" % problem)
-	subject.inputData(trial, "solution", soln)
+		#get problem info and data
+		ns = problem.row['ns']
+		n1 = ns[0]
+		n2 = ns[1]
+		soln = problem.row['solution']	
+		lastSoln = copy.deepcopy(soln)
 
-	#prep the problem for display
-	random.shuffle(ns)
-	problem_string = "%s %s %s = ?" % (ns[0], operation, ns[1])
+		#record problem operands, solution, and id
+		subject.inputData(trial, "n1", n1)
+		subject.inputData(trial, "n2", n2)
+		subject.inputData(trial, "problem", "%s" % problem)
+		subject.inputData(trial, "solution", soln)
 
-	#select the distractor
-	distractor = problem.getDistractor()
-	side = random.choice(['l', 'r'])
-	if side == "l":
-		correct = "left"
-		L = str(soln)
-		R = distractor
-	elif side == "r":
-		correct = "right"
-		L = distractor
-		R = str(soln)
+		#prep the problem for display
+		random.shuffle(ns)
+		problem_string = "%s %s %s = ?" % (ns[0], operation, ns[1])
+
+		#select the distractor
+		distractor = problem.getDistractor()
+		side = random.choice(['l', 'r'])
+		if side == "l":
+			correct = "left"
+			L = str(soln)
+			R = distractor
+		elif side == "r":
+			correct = "right"
+			L = distractor
+			R = str(soln)
 	
-	#record distractor info
-	subject.inputData(trial, "distractor", distractor)
-	subject.inputData(trial, "dist_side", side)
+		#record distractor info
+		subject.inputData(trial, "distractor", distractor)
+		subject.inputData(trial, "dist_side", side)
 
-	#vision egg display stuff
-	probText, probPort = printWord(screen, problem_string, 60, (255, 255, 255))
-	vp, vr = printText(screen, "\n\n\n\n\n\n\n%s                                                 %s" % (L, R), 60, (255, 255, 255))
-	fixText, fixCross = printText(screen, '', 60, (255, 255, 255))
+		#vision egg display stuff
+		probText, probPort = printWord(screen, problem_string, 60, (255, 255, 255))
+		vp, vr = printText(screen, "\n\n\n\n\n\n\n\n\n%s                                                 %s" % (L, R), 60, (255, 255, 255))
+		fixText, fixCross = printText(screen, '', 60, (255, 255, 255))
 
-	#experimenter info on the terminal
-	print "-------------------------------------"
-	print "PROBLEM : %s" % problem
-	print "SOLUTION : %s" % soln
-	print "-------------------------------------"
+		#experimenter info on the terminal
+		print "-------------------------------------"
+		print "PROBLEM : %s" % problem
+		print "SOLUTION : %s" % soln
+		print "-------------------------------------"
 
-	#BLOCK 1 - PROBLEM, BLANK & POSSIBLE SOLUTIONS
-	p4 = Presentation(go_duration=(problemTime, 'seconds'), viewports=[probPort])
-	p4.go()
+		#BLOCK 1 - PROBLEM, BLANK & POSSIBLE SOLUTIONS
+		p4 = Presentation(go_duration=(problemTime, 'seconds'), viewports=[probPort])
+		p4.go()
 
-	#p3 = Presentation(go_duration=(blankTime, 'seconds'), viewports=[fixCross])
-	#p3.go()
+		#p3 = Presentation(go_duration=(blankTime, 'seconds'), viewports=[fixCross])
+		#p3.go()
 
-	p = Presentation(go_duration=('forever', ), viewports=[probPort, vr])
-	p.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, key_handler)]  
-	p.go()
+		p = Presentation(go_duration=('forever', ), viewports=[probPort, vr])
+		p.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, key_handler)]  
+		p.go()
 
 	
-	subject.inputData(trial, "RT", RT)
-	subject.inputData(trial, "ACC", ACC)
+		subject.inputData(trial, "RT", RT)
+		subject.inputData(trial, "ACC", ACC)
 	
-	if diffTime > 1.5:
-		diffTime -= .1
+		if diffTime > 1.5:
+			diffTime -= .1
 
-	#BLOCK 2 - strat SELECTION
-	p2 = Presentation(go_duration=(diffTime, 'seconds'), viewports=[stratPort])
-	p2.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, diff_handler)]        
-	p2.go()
+		#BLOCK 2 - strat SELECTION
+		p2 = Presentation(go_duration=(diffTime, 'seconds'), viewports=[stratPort])
+		p2.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, diff_handler)]        
+		p2.go()
 	
-	#BLOCK 3 - BLANK SCREEN
-	p3 = Presentation(go_duration=(0.5, 'seconds'), viewports=[fixCross])
-	p3.go()
+		#BLOCK 3 - BLANK SCREEN
+		p3 = Presentation(go_duration=(0.5, 'seconds'), viewports=[fixCross])
+		p3.go()
 
-	subject.inputData(trial, 'strat', strat)
+		subject.inputData(trial, 'strat', strat)
 	
-	response = {'trial': trial, 'RT' : RT, 'ACC' : ACC, 'strat' : strat}
+		response = {'trial': trial, 'RT' : RT, 'ACC' : ACC, 'strat' : strat}
 
-	problem.addResponse(response)
-	problems.append(problem)
+		problem.addResponse(response)
+		problems.append(problem)
 	
-	subject.printData()
+		subject.printData()
 
 #save sub
 subject.printData()
