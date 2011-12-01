@@ -41,21 +41,31 @@ return to phase 2 if phase 3 doesn't completed sucessfully
 #strat control, mouse clicks
 def diff_handler(event):
 	global strat
+	global pausePort
+	global paused
+	global diffTime
 
 	key = event.key	
 	
 	if key == pygame.locals.K_SPACE:
 		strat = 'mem'
 		p2.parameters.go_duration = (0, 'frames')
-
+	elif key == pygame.locals.K_p:
+		#pause the screen
+		if not paused:
+			paused = True
+			p2.parameters.viewports.append(pausePort)
+			p2.parameters.go_duration = ('forever', '')
+		else:
+			paused = False
+			p2.parameters.viewports.pop(-1)
+			p2.parameters.go_duration = (diffTime, 'seconds')
 	
 def key_handler(event):
 	global correct 
 	global ACC
 	global RT
 	key = event.key
-
-	print event.key
 
 	RT = p.time_sec_since_go
 	
@@ -126,15 +136,16 @@ pygame.font.init()
 ###UNCHANGING STIMULI
 
 #strat selection
-fixText, fixCross = printWord(screen, '', 60, (255, 255, 255))
+fixText, fixCross = printText(screen, '', 60, (255, 255, 255))
 
 #generate texts
 strat2 = "\n\nDescribe your strategy"
 stratText, stratPort = printText(screen, strat2, 60, (255, 255, 255))
 
-db = "mri_test"
+pauseText, pausePort = printText(screen, "paused", 60, (255, 255, 255))
 
-problems = Problems(db, sid, "addition")
+p4 = Presentation(go_duration=(problemTime, 'seconds'))
+p = Presentation(go_duration=('forever', ))
 
 #strat selection
 startText, startCross = printWord(screen, 'Press the SPACEBAR to start', 60, (255, 255, 255))
@@ -142,6 +153,16 @@ startText, startCross = printWord(screen, 'Press the SPACEBAR to start', 60, (25
 pause = Presentation(go_duration=('forever', ), viewports=[startCross])
 pause.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, pause_handler)]  
 pause.go()
+
+p3 = Presentation(go_duration=(0.5, 'seconds'), viewports=[fixCross])
+
+p2 = Presentation(go_duration=(diffTime, 'seconds'), viewports=[stratPort])
+p2.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, diff_handler)]        
+
+
+###DB STUFF
+db = "mri_test"
+problems = Problems(db, sid, "addition")
 
 #some walkers that we'll use to sample areas of interest of problem space
 first_walker = Walker()
@@ -152,11 +173,12 @@ for i in [2,3,5,7,10]:
 
 walkers = Walkers(walkers)
 
-phase = 2
+phase = 1
 
 while not done:
 	trial += 1
 	strat = 'calc'
+	paused = False
 	#select operands based on phase
 	
 
@@ -182,7 +204,8 @@ while not done:
 				problem = first_walker.next()
 
 				if not problem:
-					phase += 1			
+					phase += 1
+					print "leaving phase 1"
 
 			if phase == 2:
 				counts = problems.getCounts()
@@ -203,6 +226,7 @@ while not done:
 					problem = problems.suggestProblem('calc')
 				else:
 					phase += 1
+					print "leaving phase 2"
 
 			if phase == 3:
 				temp = problems.getTemp()
@@ -210,6 +234,7 @@ while not done:
 					problem = temp
 				else:
 					phase += 1
+					print "leaving phase 3"
 			#probably should do some last check here and redirect if necessary
 		
 			if phase == 4:
@@ -218,6 +243,7 @@ while not done:
 				vc = counts['calc']
 				if vm < memCount or vc < calcCount:
 					phase = 2
+					print "leaving phase 4"
 				else:
 					print "Experiment Complete :)"
 					done = True
@@ -264,22 +290,16 @@ while not done:
 		#vision egg display stuff
 		probText, probPort = printWord(screen, problem_string, 60, (255, 255, 255))
 		vp, vr = printText(screen, "\n\n\n\n\n\n\n\n\n%s                                                 %s" % (L, R), 60, (255, 255, 255))
-		fixText, fixCross = printText(screen, '', 60, (255, 255, 255))
-
-		#experimenter info on the terminal
-		print "-------------------------------------"
-		print "PROBLEM : %s" % problem
-		print "SOLUTION : %s" % soln
-		print "-------------------------------------"
-
 		#BLOCK 1 - PROBLEM, BLANK & POSSIBLE SOLUTIONS
-		p4 = Presentation(go_duration=(problemTime, 'seconds'), viewports=[probPort])
+
+		p4.parameters.viewports=[probPort]
 		p4.go()
 
 		#p3 = Presentation(go_duration=(blankTime, 'seconds'), viewports=[fixCross])
 		#p3.go()
 
-		p = Presentation(go_duration=('forever', ), viewports=[probPort, vr])
+		p.parameters.viewports=[probPort, vr]
+		p.parameters.go_duration=('forever', '')
 		p.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, key_handler)]  
 		p.go()
 
@@ -291,12 +311,10 @@ while not done:
 			diffTime -= .1
 
 		#BLOCK 2 - strat SELECTION
-		p2 = Presentation(go_duration=(diffTime, 'seconds'), viewports=[stratPort])
-		p2.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, diff_handler)]        
+		p2.parameters.go_duration=(diffTime, 'seconds')
 		p2.go()
 	
 		#BLOCK 3 - BLANK SCREEN
-		p3 = Presentation(go_duration=(0.5, 'seconds'), viewports=[fixCross])
 		p3.go()
 
 		subject.inputData(trial, 'strat', strat)
