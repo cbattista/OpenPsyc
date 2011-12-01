@@ -4,8 +4,7 @@ import random
 
 class Walker:
 	"""
-	a really random problem generator
-	just gives you random problems between 1 and maxOp(int)
+	gives you random problems with operands between 1 and maxOp(int)
 	"""
 
 	def __init__(self, maxOp=50, minOp = 2, direction="up", stepSize=[1,2,3,4], cycles=1, *args, **kwargs):
@@ -49,10 +48,14 @@ class Walker:
 
 	def next(self):
 		self.setNs()
-		if self.ccount < self.cycles:
+		#if there is a desired amount of cycles
+		if self.cycles:
+			if self.ccount < self.cycles:
+				return Problem(self.ns)
+			else: 
+				return None
+		else:
 			return Problem(self.ns)
-		else: 
-			return None
 
 	def reset(self):
 		##
@@ -60,14 +63,12 @@ class Walker:
 
 class LineWalker(Walker):
 	"""
-	a less random problem generator
 	walks up and down a particular number's list of operands
 	"""
 	def __init__(self, number=10, *args, **kwargs):
 		Walker.__init__(self, *args, **kwargs)
 		self.number = number
-		self.n = 1
-		self.direction = "up"		
+		self.n = self.minOp
 
 	def setNs(self):
 		if self.direction == "up":
@@ -87,7 +88,22 @@ class LineWalker(Walker):
 			self.n = self.n
 
 		self.ns = [self.n, self.number]
-			
+
+class RangeWalker(Walker):
+	"""
+	walks up and down a particular range of operands
+	"""
+	def __init__(self, range1, range2, *args, **kwargs):
+		Walker.__init__(self, *args, **kwargs)
+		#we're actually going to use two LineWalkers to make this happen
+		self.w1 = LineWalker(maxOp=range1[1], minOp=range1[0], number=1, cycles=0)
+		self.w2 = LineWalker(maxOp=range2[1], minOp=range2[0], number=1, cycles=0)
+					
+	def setNs(self):
+		n1 = self.w1.next().row['ns'][1]
+		n2 = self.w2.next().row['ns'][1]
+		self.ns = [n1, n2]
+
 
 class Walkers:
 	"""polls a group of walkers for problems
@@ -105,4 +121,5 @@ class Walkers:
 				return p
 
 		return None				
+
 
