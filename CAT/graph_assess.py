@@ -30,9 +30,7 @@ markers = []
 RTs = []
 
 for problem in problems.find():
-
 	for h in problem['history']:
-
 		if h['strat'] == 'calc':
 			c = 'r'
 		else:
@@ -45,11 +43,12 @@ for problem in problems.find():
 
 		rt = h['RT']
 
-		xs.append(problem['n1'])
-		ys.append(problem['n2'])
-		colors.append(c)
-		markers.append(m)
-		RTs.append(rt)
+		if rt < 10:
+			xs.append(problem['n1'])
+			ys.append(problem['n2'])
+			colors.append(c)
+			markers.append(m)
+			RTs.append(rt)
 
 ma = max(RTs)
 
