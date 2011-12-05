@@ -168,12 +168,15 @@ problems = Problems(db, sid, "addition")
 first_walker = Walker()
 
 walkers = []
-for i in [2,3,5,7,10]:
+for i in [10, 20]:
 	walkers.append(LineWalker(i, stepSize=[3,4]))
+
+walkers.append(RangeWalker([1,9], [1,35]))
+walkers.append(RangeWalker([11,19], [1,25]))
 
 walkers = Walkers(walkers)
 
-phase = 1
+phase = 2
 
 while not done:
 	trial += 1
@@ -289,7 +292,8 @@ while not done:
 
 		#vision egg display stuff
 		probText, probPort = printWord(screen, problem_string, 60, (255, 255, 255))
-		vp, vr = printText(screen, "\n\n\n\n\n\n\n\n\n%s                                                 %s" % (L, R), 60, (255, 255, 255))
+		print L, R
+		vp, vr = printText(screen, "\n\n\n\n\n\n\n\n\n%s                                               %s" % (L, R), 60, (255, 255, 255))
 		#BLOCK 1 - PROBLEM, BLANK & POSSIBLE SOLUTIONS
 
 		p4.parameters.viewports=[probPort]

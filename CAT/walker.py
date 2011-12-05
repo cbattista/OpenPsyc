@@ -106,7 +106,8 @@ class RangeWalker(Walker):
 
 
 class Walkers:
-	"""polls a group of walkers for problems
+	"""
+	polls a group of walkers for problems
 	"""
 
 	def __init__(self, walkers):

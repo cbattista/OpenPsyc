@@ -125,8 +125,6 @@ class Problems:
 			else:
 				novel = True
 
-			print p, novel, size
-
 			if size and novel:
 				badProblem = False
 
