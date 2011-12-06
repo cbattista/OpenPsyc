@@ -32,8 +32,31 @@ phase 2 - 20 problems
 phase 3- dti run
 phase 4 - 20 problems
 phase 5 - 20 problems
-
 """
+
+def put_problem(t_abs):
+	global phase
+	global start
+	global pText #problem text
+	global dText #distractor text
+
+	if not phase:
+		start = t_abs
+		phase = "problem"
+
+	t = t_abs - start
+
+	if t >= problem_duration and phase == "problem":
+		p.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, key_handler)]  
+		p.parameters.viewports = [pText, dText]
+		phase = "distractors"
+
+	elif t >= (problem_duration + distractor_duration) and phase == "distractors":
+		p.parameters.viewports = []
+		phase = "pause"
+
+	elif t >= (dot_duration  + distractor_duration + pause_duration)
+		p.parameters.go_duration = [0, 'frames']
 
 #FUNCTIONS
 #strat control, mouse clicks
@@ -106,9 +129,15 @@ except:
 ###VARIABLES
 
 #settings variables
-problemTime = 1 #how long the program stays on the screen
-blankTime = 0.1 #blank between problem and solutions
-diffTime = 2.5 #how long the strategy response appears for
+problem_duration = 2 #how long the program stays on the screen
+distractor_duration = 2
+pause_duration = 1
+probs_per_block = 20
+RUN_FIX = 5 #how long the fixation at the start of the run appears for
+DTI_FIX = 25 #how long the DTI acquisition has to last for
+
+j = jitterTool(events=probs_per_block, offsets=probs_per_block/2)
+isis = jitterTools(events=probs_per_block, offsets=5, TR=4)
 
 #state variables
 done = False
@@ -126,24 +155,37 @@ pygame.font.init()
 
 ###UNCHANGING STIMULI
 
-#the math problem
-p4 = Presentation(go_duration=(problemTime, 'seconds'))
-#math problem with distractors
+#math problem
 p = Presentation(go_duration=('forever', ))
-
-#strat selection
-p2 = makeText(screen, "\n\nDescribe your strategy", duration=diffTime)
-p2.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, diff_handler)]        
-
-#fixation
-p3 = makeText(screen, '', duration=0.5, quittable=False)
 
 start = makeText(screen, 'Press the SPACEBAR to start')
 start.go()
 
+runFix = makeText(screen, '+', duration=RUN_FIX, quittable=False)
+
+dtiFix = makeText(screen, '|', duration=DTI_FIX, quittable=False)
+
 ###DB STUFF
 db = "mri_test"
-problems = Problems(db, sid, "addition_post")
+pre = Problems(db, sid, "addition")
+
+###do problem shuffling stuff here
+#for blocks of problems
+pBlocks = [[], [], [], []]
+
+for r in ['func','func','dti','func','func']:
+	runFix.go()
+	if r == 'dti':
+		dtiFix.go()
+	else:
+		problems = pBlocks.pop()
+		#get the order of jitters and isis for this block
+		jitters = j.shuffle()
+		isis = isi.shuffle()
+
+
+	for p in problems:
+
 
 for old in problems.find():
 	trial += 1
@@ -188,31 +230,20 @@ for old in problems.find():
 	subject.inputData(trial, "dist_side", side)
 
 	#vision egg display stuff
-	probText, probPort = printWord(screen, problem_string, 60, (255, 255, 255))
+	pText, probPort = printWord(screen, problem_string, 60, (255, 255, 255))
 	print L, R
-	vp, vr = printText(screen, "\n\n\n\n\n\n\n\n\n%s                                               %s" % (L, R), 60, (255, 255, 255))
+	dText, vr = printText(screen, "\n\n\n\n\n\n\n\n\n%s                                               %s" % (L, R), 60, (255, 255, 255))
 	#BLOCK 1 - PROBLEM, BLANK & POSSIBLE SOLUTIONS
 
-	p4.parameters.viewports=[probPort]
-	p4.go()
+	p.parameters.viewports=[probPort]
+	p.go()
 
 	#p3 = Presentation(go_duration=(blankTime, 'seconds'), viewports=[fixCross])
 	#p3.go()
 
-	p.parameters.viewports=[probPort, vr]
-	p.parameters.go_duration=('forever', '')
-	p.parameters.handle_event_callbacks=[(pygame.locals.KEYDOWN, key_handler)]  
-	p.go()
 
 	subject.inputData(trial, "RT", RT)
 	subject.inputData(trial, "ACC", ACC)
-
-	if diffTime > 1.5:
-		diffTime -= .1
-
-	#BLOCK 2 - strat SELECTION
-	p2.parameters.go_duration=(diffTime, 'seconds')
-	p2.go()
 
 	#BLOCK 3 - BLANK SCREEN
 	p3.go()
