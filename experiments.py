@@ -2,7 +2,7 @@
 
 """
 C. Battista PsychoMetric Experiments Module
-Copyright (C) 2007 Christian Joseph Battista/Jobe Microsystems
+Copyright (C) 2011 Christian Joseph Battista
 
 email - battista.christian@gmail.com
 
@@ -122,6 +122,35 @@ def showInstructions(screen,  text, textSize=60, textcolor=(255, 255, 255)):
 
 	#show instructions
 	instructions.go()
+
+def makeText(screen, text, textSize=60, textcolor=(255, 255, 255), duration=0, quittable=True):
+	#create our instruction screen
+	#load up the instruction text
+
+	insStim, insView = printText(screen, text, textSize, textcolor)
+	if duration:
+		gd = (duration, 'seconds')
+	else:
+		gd = ('forever',)
+
+	instructions = Presentation(go_duration=gd, viewports=[insView])
+
+	#add a quit function and a handler to go with it
+	def quitKey(event):
+		if event.key == pygame.locals.K_SPACE:
+			quit()
+
+	def click(event):
+		quit()
+
+	def quit(dummy_arg=None):
+		instructions.parameters.go_duration = (0,'frames')
+
+	if quittable:
+		instructions.parameters.handle_event_callbacks=[(pygame.locals.QUIT, quit),(pygame.locals.KEYDOWN, quitKey), (pygame.locals.MOUSEBUTTONDOWN, click)]
+
+	#show instructions
+	return instructions
 
 def showImage(screen, img, duration=1):
 
