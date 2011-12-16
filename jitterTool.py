@@ -64,9 +64,6 @@ class jitterTool:
 		#make a dict to hold the hrfs 
 		events = list(set(self.labels))
 		HRFs = {}
-
-		#make an array of the timepoints
-		t = numpy.linspace(0, self.duration, self.duration * self.sample_res)
 		
 		for e in events:
 
@@ -75,9 +72,10 @@ class jitterTool:
 				#hrf
 				hrf = fmri.hrf.gamma_hrf(self.duration, delta=self.times[trial], Fs=self.sample_res)
 				if trial:
-					print len(hrfs)
-					print len(hrf)
-					hrfs += hrf
+					#print len(hrfs)
+					if len(hrf) == len(hrfs):
+						hrfs += hrf
+					
 				else:
 					hrfs = hrf					
 
@@ -91,7 +89,16 @@ class jitterTool:
 		for t, l in zip(self.times, self.labels):
 			print t, l
 
-		print self.HRFs
+		#make an array of the timepoints
+		t = numpy.linspace(0, self.duration, self.duration * self.sample_res)
+
+		pylab.figure()
+
+		for k in self.HRFs.keys():		
+			pylab.plot(t, self.HRFs[k], label=k)
+		#print self.HRFs
+
+		pylab.show()
 
 events = [['prob', 2], ['soln',4], ['ISI']]
 
