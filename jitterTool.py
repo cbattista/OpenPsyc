@@ -8,7 +8,7 @@ import pylab
 #nitime.fmri.hrf.gamma_hrf(duration, A=1.0, tau=1.08, n=3, delta=2.05, Fs=1.0)
 
 class jitterTool:
-	def __init__(self, events, trials=25, duration=300, TR=2, hrf_dur=6, sample_res = 2):
+	def __init__(self, events, trials=25, duration=300, TR=2, hrf_dur=6, sample_res = 3):
 		self.TR = TR
 		self.duration = duration
 		self.pulses = numpy.arange(0, duration+TR, step=TR)
@@ -73,8 +73,10 @@ class jitterTool:
 				hrf = fmri.hrf.gamma_hrf(self.duration, delta=self.times[trial], Fs=self.sample_res)
 				if trial:
 					#print len(hrfs)
-					if len(hrf) == len(hrfs):
-						hrfs += hrf
+					if len(hrf) != len(hrfs):
+						hrf = numpy.append(hrf, 0)
+
+					hrfs += hrf
 					
 				else:
 					hrfs = hrf					
@@ -95,6 +97,7 @@ class jitterTool:
 		pylab.figure()
 
 		for k in self.HRFs.keys():		
+			print k
 			pylab.plot(t, self.HRFs[k], label=k)
 		#print self.HRFs
 
