@@ -3,6 +3,7 @@ import shuffler
 from nitime import fmri
 import numpy
 import pylab
+from graphics import colorDict
 
 #you will no doubt forget the hrf function's arguments
 #nitime.fmri.hrf.gamma_hrf(duration, A=1.0, tau=1.08, n=3, delta=2.05, Fs=1.0)
@@ -37,7 +38,6 @@ class jitterTool:
 
 		isis = numpy.linspace(avg_isi - half_duration, avg_isi + half_duration, self.trials)
 		numpy.random.shuffle(isis)
-
 
 		times = []
 		labels = []
@@ -88,16 +88,20 @@ class jitterTool:
 
 
 	def show(self):
-		for t, l in zip(self.times, self.labels):
-			print t, l
-
-		#make an array of the timepoints
-		t = numpy.linspace(0, self.duration, self.duration * self.sample_res)
 
 		pylab.figure()
 
+		cDict = colorDict()
+
+		for etime, label in zip(self.times, self.labels):
+			c = cDict[label]
+			print label, etime, c			
+			pylab.plot([etime, etime], [0, 2], color=c)
+
+		#make an array of the timepoints
+		t = numpy.linspace(0, self.duration, self.duration * self.sample_res)
+		
 		for k in self.HRFs.keys():		
-			print k
 			pylab.plot(t, self.HRFs[k], label=k)
 		#print self.HRFs
 
