@@ -70,7 +70,7 @@ class jitterTool:
 			hrfs = None
 			for trial in range(0, self.trials):
 				#hrf
-				hrf = fmri.hrf.gamma_hrf(self.duration, delta=self.times[trial], Fs=self.sample_res)
+				hrf = fmri.hrf.gamma_hrf(self.duration, delta=self.times[trial*3], Fs=self.sample_res)
 				if trial:
 					#print len(hrfs)
 					if len(hrf) != len(hrfs):
@@ -95,8 +95,7 @@ class jitterTool:
 
 		for etime, label in zip(self.times, self.labels):
 			c = cDict[label]
-			print label, etime, c			
-			pylab.plot([etime, etime], [0, 2], color=c)
+			pylab.plot([etime, etime], [0, 1.1], color=c)
 
 		#make an array of the timepoints
 		t = numpy.linspace(0, self.duration, self.duration * self.sample_res)
@@ -109,6 +108,6 @@ class jitterTool:
 
 events = [['prob', 2], ['soln',4], ['ISI']]
 
-jt = jitterTool(events)
+jt = jitterTool(events, sample_res = 3)
 
 jt.show()
