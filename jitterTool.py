@@ -17,10 +17,22 @@ class jitterTool:
 		self.trials = trials
 		self.hrf_dur = hrf_dur
 		self.sample_res = sample_res
-		self.make()
+		self.makeEvents()
+		self.makeTRs()
 		self.calculateHRFs()
 
-	def make(self):
+
+	def makeTRs(self):
+		#draw the TRs on there
+		#need a gray box
+		self.TRs = [0]
+		tr = 0 
+		while tr <= self.duration:
+			tr += (self.TR * 2)
+			self.TRs.append(tr)
+		
+
+	def makeEvents(self):
 		#first take a look at the events we have
 		numevents = len(events)
 		labels = []		
@@ -39,30 +51,30 @@ class jitterTool:
 		isis = numpy.linspace(avg_isi - half_duration, avg_isi + half_duration, self.trials)
 		numpy.random.shuffle(isis)
 
-		times = []
-		labels = []
+		times = {}
 		
 		scanTime = 0
 
 		t = 0
 		while t < self.trials:
 			for e in events:
-				times.append(scanTime)
+				if times.has_key(e[0]):
+					times[e[0]].append(scanTime)
+				else:
+					times[e[0]] = [scanTime]
 
 				if e[0] == 'ISI':
 					scanTime += isis[t]
 				else:
 					scanTime += e[1]
 		
-				labels.append(e[0])
 			t+=1
 
-		self.times = times
-		self.labels = labels
+			self.times = times
 
 	def calculateHRFs(self):
 		#make a dict to hold the hrfs 
-		events = list(set(self.labels))
+		events = self.times.keys()
 		HRFs = {}
 		
 		for e in events:
@@ -70,7 +82,7 @@ class jitterTool:
 			hrfs = None
 			for trial in range(0, self.trials):
 				#hrf
-				hrf = fmri.hrf.gamma_hrf(self.duration, delta=self.times[trial*3], Fs=self.sample_res)
+				hrf = fmri.hrf.gamma_hrf(self.duration, delta=self.times[e][trial], Fs=self.sample_res)
 				if trial:
 					#print len(hrfs)
 					if len(hrf) != len(hrfs):
@@ -84,30 +96,58 @@ class jitterTool:
 			#do a column sum and put it into the dict
 			HRFs[e] = hrfs
 
+		#make an array of the timepoints
+		self.hrf_times = numpy.linspace(0, self.duration, self.duration * self.sample_res)
+
 		self.HRFs = HRFs
 
+	def evaluate(self):
+		for k in self.HRFs.keys():
+
+			emitted = 0
+			observed = 0
+
+			for t, h in zip(self.hrf_times, self.HRFs[k]):
+				emitted += h
+			
+				TR_num = int(t / (self.TR * 2))
+				start = TR_num * self.TR * 2
+				stop = start + self.TR
+
+				if t >= start and t <= stop:
+					observed += h
+
+			print k, (observed/emitted * 100), observed, emitted
+			
 
 	def show(self):
 
 		pylab.figure()
-
 		cDict = colorDict()
 
-		for etime, label in zip(self.times, self.labels):
-			c = cDict[label]
-			pylab.plot([etime, etime], [0, 1.1], color=c)
+		for k in self.times.keys():
+			c = cDict[k]
+			for etime in self.times[k]:
+				pylab.plot([etime, etime], [0, 1.1], color=c)
 
-		#make an array of the timepoints
-		t = numpy.linspace(0, self.duration, self.duration * self.sample_res)
-		
-		for k in self.HRFs.keys():		
-			pylab.plot(t, self.HRFs[k], label=k)
-		#print self.HRFs
+		for k in self.HRFs.keys():
+			if k != 'ISI':
+				#pylab.plot(self.hrf_times, self.HRFs[k], label=k, color=cDict[k])
+				pylab.fill_between(self.hrf_times, self.HRFs[k], color=cDict[k], alpha=0.5)
+
+		for tr in self.TRs:
+			pylab.bar([tr], 1, width = self.TR, color='k', alpha=0.2)
+
+		#pylab.legend()
 
 		pylab.show()
 
-events = [['prob', 2], ['soln',4], ['ISI']]
+events = [['prob', 2], ['soln',5], ['ISI']]
 
-jt = jitterTool(events, sample_res = 3)
+jt = jitterTool(events, sample_res = 5, duration = 300, TR = 2)
 
-jt.show()
+jt.evaluate()
+
+#jt.show()
+
+
