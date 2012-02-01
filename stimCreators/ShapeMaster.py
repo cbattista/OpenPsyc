@@ -6,7 +6,7 @@ import copy
 from euclid import euclid
 		   
 class ShapeMaster:
-	def __init__(self, box=[640, 640], shapesize = [0.3, 0.3], shape= 'circle', sizemeasure='area', sizectrl = 'SC', density=5, separation=25, colors =[[255, 255, 255]], overlay = False, bgcolor = [0,0,0], outline = [255, 255, 255], control='', logFile = "dot_log.csv", drawOutline=False):
+	def __init__(self, box=[640, 640], shapesize = [0.3, 0.3], shape= 'circle', sizemeasure='area', density=5, separation=25, colors =[[255, 255, 255]], overlay = False, bgcolor = [0,0,0], outline = [255, 255, 255], control='', logFile = "dot_log.csv", drawOutline=False):
 
 		#make an output directory
 		if not os.path.exists("stimuli"):
