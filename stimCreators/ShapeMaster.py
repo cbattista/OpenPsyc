@@ -36,6 +36,8 @@ class ShapeMaster:
 		self.control = control
 		self.controlValue = False
 		self.drawOutline = drawOutline
+		self.MAX = .8
+		self.MIN = .2
 
 	def _shapeSolver(self, n=1, size=100, MIN=.2, MAX=.8, control = ''):
 		#input - number of dots
@@ -183,8 +185,6 @@ class ShapeMaster:
 
 		sizeList, sepShapes = self._generateLists(ns, self.control)
 		
-		print sizeList
-
 		if len(sizeList) > 1:
 
 			while not goodList:
@@ -318,14 +318,11 @@ class ShapeMaster:
 		for d in self.shapeBoxes:
 		
 			cols.append(d[4])
-
-		print cols
 			
 		cols = set(cols)
 		cols = list(cols)
 
-		cols = [0, 1]
-		self.shapeBoxes = [self.shapeBoxes[0], self.shapeBoxes[2]]
+		#self.shapeBoxes = [self.shapeBoxes[0], self.shapeBoxes[2]]
 
 		count = 0
 
@@ -333,19 +330,21 @@ class ShapeMaster:
 				
 		draw = ImageDraw.Draw(image)
 
-		print self.shapeBoxes, cols
-
-
 		if self.drawOutline:
 			draw.rectangle([0, 0, self.box[0] * 2, self.box[1]], fill = self.outline)
 			draw.rectangle([4, 4, (self.box[0] * 2) - 4, self.box[1] - 4], fill = self.bgcolor)
 
 		draw.rectangle([self.box[0] - 4, 0, self.box[0] + 4, self.box[1]], fill = self.outline)
 
+		cols = list(set(cols))
+		print cols
 
 		for c in cols:
+			print "Color:", c
 			for d in self.shapeBoxes:
+				print d
 				if d[4] == c:
+					print "Match!"
 					box1 = [d[0] - d[2] + (count * self.box[0]), d[1] - d[2], d[0] + d[2] + (count * self.box[0]), d[1] + d[2]]
 					if self.shape == 'circle':
 						draw.ellipse(box1, fill = self.colors[c])
