@@ -29,5 +29,6 @@ class colorDict(dict):
 			return self.d[key]
 	
 	def __setitem__(self, key, value):
-		self.d[item] = value
+		self.d[key] = value
+
 
