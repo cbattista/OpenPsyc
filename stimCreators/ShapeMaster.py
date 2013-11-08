@@ -4,29 +4,33 @@ import os
 import Image, ImageDraw, ImageFilter, ImageFont
 import copy
 from euclid import euclid
+import datetime
 		   
 class ShapeMaster:
-	def __init__(self, box=[640, 640], shapesize = [0.3, 0.3], shape= 'circle', sizemeasure='area', density=5, separation=25, colors =[[255, 255, 255]], overlay = False, bgcolor = [0,0,0], outline = [255, 255, 255], control='', logFile = "dot_log.csv", drawOutline=False):
+	def __init__(self, box=[640, 640], shapesize = [0.3, 0.3], shape= 'circle', sizemeasure='area', density=5, separation=25, colors =[[255, 255, 255]], overlay = False, bgcolor = [0,0,0], outline = [255, 255, 255], control='', drawOutline=False, MIN=.2, MAX=.8, texture=None, sameSize = False):
 
 		#make an output directory
 		if not os.path.exists("stimuli"):
 			os.mkdir("stimuli")
 
+		self.texture = texture
+
 		self.box = box
-		self.logFile = logFile
+		self.logFile = "dot_log_%s.csv" % datetime.datetime.now()
 		self.ctl_iters = 1
 		self.shape = shape
 		#if one item size provided
 		#otherwise don't size control
-		self.shapeSize = []
-		for s in shapesize:
-			if sizemeasure == 'area':
-				self.shapeSize.append(box[0] * box[1] * s)
-			elif sizemeasure == 'perimeter':
-				self.shapeSize.append((box[0] + box[1]) * s)
-		
-		self.overlay = overlay
 		self.sizemeasure = sizemeasure
+
+		self._setSize(shapesize)
+		
+		self.MIN = MIN
+		self.MAX = MAX
+		
+		self.sameSize = sameSize
+
+		self.overlay = overlay
 		self.density = density
 		self.separation = separation
 		
@@ -36,10 +40,17 @@ class ShapeMaster:
 		self.control = control
 		self.controlValue = False
 		self.drawOutline = drawOutline
-		self.MAX = .8
-		self.MIN = .2
 
-	def _shapeSolver(self, n=1, size=100, MIN=.2, MAX=.8, control = ''):
+	def _setSize(self, shapesize):
+		self.shapeSize = []
+		for s in shapesize:
+			if self.sizemeasure == 'area':
+				self.shapeSize.append(self.box[0] * self.box[1] * s)
+			elif self.sizemeasure == 'perimeter':
+				self.shapeSize.append((self.box[0] + self.box[1]) * s)
+
+
+	def _shapeSolver(self, n=1, size=100, control = ''):
 		#input - number of dots
 		#solver algo
 		#1 - calculate average size
@@ -54,23 +65,27 @@ class ShapeMaster:
 		mySizes = []
 
 		if n > 1:
-			#make a guess on the average sizes of the n-1 of the items
-			for i in range(n-1):
-				num = random.uniform(MIN, MAX)
-				operation = random.choice(operations)
-				mySizes.append(avg + (operation * num * avg))
-
-			#determine the appropriate size of the nth item
-			total = sum(mySizes)
-			diff = size - total
-		
-			if diff > 0 and diff >= (avg*MIN) and diff <= (avg*MAX):
-				mySizes.append(diff)
+			if self.sameSize:
+				mySizes = [avg] * n
 			else:
-				mySizes = []
-				while not mySizes:
-					mySizes = self._shapeSolver(n, size)
-				mySizes = mySizes[0]
+				#make a guess on the average sizes of the n-1 of the items
+				for i in range(n-1):
+					num = random.uniform(self.MIN, self.MAX)
+					operation = random.choice(operations)
+					mySizes.append(avg + (operation * num * avg))
+
+				#determine the appropriate size of the nth item
+				total = sum(mySizes)
+				diff = size - total
+		
+				if diff > 0 and diff >= (avg*self.MIN) and diff <= (avg*self.MAX):
+					mySizes.append(diff)
+				else:
+					mySizes = []
+					while not mySizes:
+						mySizes = self._shapeSolver(n, size)
+					mySizes = mySizes[0]
+
 		else:
 			mySizes = [size]
 		
@@ -182,6 +197,8 @@ class ShapeMaster:
 
 		self.ratio_log = "%s, %s, %s, %s" % (ns[0], ns[1], round(ratio, 2), round(1/ratio, 2))
 
+		self.ns = ns
+
 
 		sizeList, sepShapes = self._generateLists(ns, self.control)
 		
@@ -290,22 +307,44 @@ class ShapeMaster:
 
 		for c in cols:
 			image = Image.new("RGB", self.box, self.bgcolor)
-					
+	
+			print self.box
+
 			draw = ImageDraw.Draw(image)
 			for d in self.shapeBoxes:
 				if d[4] == c:
 					box1 = [d[0] - d[2], d[1] - d[2], d[0] + d[2], d[1] + d[2]]
-					if self.shape == 'circle':
-						draw.ellipse(box1, fill = self.colors[c])
-					elif self.shape == 'square':
-						draw.rectangle(box1, fill = self.colors[c])
-					elif self.shape == 'triangle':
-						draw.polygon([box1[0], box1[1], box1[0], box1[3], box1[2], box1[3]], fill = self.colors[c])
+					if not self.texture:
+						if self.shape == 'circle':
+							draw.ellipse(box1, fill = self.colors[c])
+						elif self.shape == 'square':
+							draw.rectangle(box1, fill = self.colors[c])
+						elif self.shape == 'triangle':
+							draw.polygon([box1[0], box1[1], box1[0], box1[3], box1[2], box1[3]], fill = self.colors[c])
+					else:
+						#open the bitmap
+						mybit = Image.open(self.texture)
+						size = box1[2] - box1[0]
+						print size
+						print box1
+						#scale the it
+						newsize = mybit.resize([size, size], Image.ANTIALIAS)
+						x,y = newsize.size
+						print x, y
+						#get the new pixel data
+						pixels = newsize.getdata()
+						#paste the image at the appropriate location
+						image.paste(newsize, box1)
 
 					
 			del draw
-				
-			fname = "%s_%s_S%s.bmp" % (self.shape, name, count)
+			
+			if self.texture:
+				texName = self.texture.split('.')[0]
+			else:
+				texName = ""
+
+			fname = "%s_%s_%s_S%s.bmp" % (self.shape, texName, name, count)
 
 			image.save("stimuli/%s" % fname, "BMP", dpi=dpi)
 				
@@ -406,7 +445,7 @@ class ShapeMaster:
 
 		draw = ImageDraw.Draw(image)
 
-		font = ImageFont.truetype("arial.ttf", 256)
+		font = ImageFont.truetype("arial.ttf", 200)
 
 		if self.drawOutline:
 			draw.rectangle([0, 0, self.box[0] * 2, self.box[1]], fill = self.outline)
@@ -424,5 +463,74 @@ class ShapeMaster:
 
 		del draw
 		image.save("stimuli/%s_D_SYM.bmp" % name, "BMP", dpi=dpi)
+
+
+	def drawDualMixed(self, name="mixed", number="L", dpi=96):
+		#obtain all the possible colors
+		
+		font = ImageFont.truetype("arial.ttf", 200)
+		
+		cols = []
+		for d in self.shapeBoxes:
+		
+			cols.append(d[4])
+			
+		cols = set(cols)
+		cols = list(cols)
+
+
+		if number == "L":
+			count = 0
+			text = str(self.ns[1])
+			fontsize = font.getsize(text)
+			text_coords = (self.box[0]/2 - fontsize[0]/2 + self.box[0], self.box[1]/2 - fontsize[1]/2)
+		elif number == "R":
+			count = 1
+			text = str(self.ns[0])
+			fontsize = font.getsize(text)
+			text_coords = (self.box[0]/2 - fontsize[0]/2 , self.box[1] /2 - fontsize[1]/2)
+		else:
+			raise Exception("drawDualMixed, number arg takes either L or R")
+
+
+		image = Image.new("RGB", [self.box[0] *2, self.box[1]], self.bgcolor)
+				
+		draw = ImageDraw.Draw(image)
+
+
+
+		if self.drawOutline:
+			draw.rectangle([0, 0, self.box[0] * 2, self.box[1]], fill = self.outline)
+			draw.rectangle([4, 4, (self.box[0] * 2) - 4, self.box[1] - 4], fill = self.bgcolor)
+
+		draw.rectangle([self.box[0] - 4, 0, self.box[0] + 4, self.box[1]], fill = self.outline)
+
+		draw.text(text_coords, text, fill = self.outline, font = font)    
+
+
+		cols = list(set(cols))
+		print cols
+
+		c = cols[count]
+
+		for d in self.shapeBoxes:
+			print d
+			if d[4] == c:
+				print "Match!"
+				box1 = [d[0] - d[2] + (count * self.box[0]), d[1] - d[2], d[0] + d[2] + (count * self.box[0]), d[1] + d[2]]
+				if self.shape == 'circle':
+					draw.ellipse(box1, fill = self.colors[c])
+				elif self.shape == 'square':
+					draw.rectangle(box1, fill = self.colors[c])
+				elif self.shape == 'triangle':
+					draw.polygon([box1[0], box1[1], box1[0], box1[3], box1[2], box1[3]], fill = self.colors[c])
+	
+		del draw
+			
+		fname = "%s_%s_M%s.bmp" % (self.shape, name, number)
+
+		image.save("stimuli/%s" % fname, "BMP", dpi=dpi)
+				
+		self._printLog(fname)
 
 
